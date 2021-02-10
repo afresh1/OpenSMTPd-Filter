@@ -1,0 +1,46 @@
+# Optional, but good to give a name
+name: CI
+
+on:
+  push:
+    branches: [ blead ]
+  pull_request:
+    branches: [ blead ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    # This creates two dimensions:
+    #   One will be called "os"  with the list of the names of the 3 runners of GitHub Actions
+    #   The other indicates version numbers of perl
+    # The words "os" and "perl" are free text here, they are like variable names.
+    # GitHub Action will run the job on 3x2 = 6 different setups
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        perl: [ '5.16', 'latest' ]
+
+    runs-on: ${{ matrix.os }}
+
+    # Just a free-text name to be descriptive
+    name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
+
+    # we will have several steps
+    steps:
+      - uses: actions/checkout@v2
+
+      # Using the action from this repository:
+      #  https://github.com/shogo82148/actions-setup-perl/
+      # Will set up the desired version of perl on the current OS.
+      - name: Set up perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+
+      # 3 separate commands on the command line of the operating system
+      # to display the version of perl - just for possible manual verification
+      # Installing the dependencies declared by the module
+      # Run prove to execute the tests
+      - run: perl -V
+      - run: cpanm --installdeps --notest .
+      - run: prove -lrv t

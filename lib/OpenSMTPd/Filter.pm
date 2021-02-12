@@ -11,6 +11,31 @@ use Carp;
 # ABSTRACT: Easier filters for OpenSMTPd in perl
 # VERSION
 
+my @report_fields = qw< version timestamp subsystem event session suffix >;
+my %report_events = (
+	'smtp-in' => {
+		'link-connect'    => [qw< rdns fcrdns src dest >],
+		'link-greeting'   => [qw< hostname >],
+		'link-identify'   => [qw< method identity >],
+		'link-tls'        => [qw< tls-string >],
+		'link-disconnect' => [qw< >],
+		'link-auth'       => [qw< username result >],
+		'tx-reset'        => [qw< message-id >],
+		'tx-begin'        => [qw< message-id >],
+		'tx-mail'         => [qw< message-id result address >],
+		'tx-rcpt'         => [qw< message-id result address>],
+		'tx-envelope'     => [qw< message-id envelope-id >],
+		'tx-data'         => [qw< message-id result >],
+		'tx-commit'       => [qw< message-id message-size >],
+		'tx-rollback'     => [qw< message-id >],
+		'protocol-client' => [qw< command >],
+		'protocol-server' => [qw< response >],
+		'filter-report'   => [qw< filter-kind name message >],
+		'filter-response' => [qw< phase response param>],
+		'timeout'         => [qw< >],
+	},
+);
+
 sub new {
 	my ( $class, %params ) = @_;
 
@@ -58,31 +83,6 @@ sub _handle_config {
 #
 # It is followed by a suffix containing the event-specific parameters, also
 # separated by "|"
-
-my @report_fields = qw< version timestamp subsystem event session suffix >;
-my %report_events = (
-	'smtp-in' => {
-		'link-connect'    => [qw< rdns fcrdns src dest >],
-		'link-greeting'   => [qw< hostname >],
-		'link-identify'   => [qw< method identity >],
-		'link-tls'        => [qw< tls-string >],
-		'link-disconnect' => [qw< >],
-		'link-auth'       => [qw< username result >],
-		'tx-reset'        => [qw< message-id >],
-		'tx-begin'        => [qw< message-id >],
-		'tx-mail'         => [qw< message-id result address >],
-		'tx-rcpt'         => [qw< message-id result address>],
-		'tx-envelope'     => [qw< message-id envelope-id >],
-		'tx-data'         => [qw< message-id result >],
-		'tx-commit'       => [qw< message-id message-size >],
-		'tx-rollback'     => [qw< message-id >],
-		'protocol-client' => [qw< command >],
-		'protocol-server' => [qw< response >],
-		'filter-report'   => [qw< filter-kind name message >],
-		'filter-response' => [qw< phase response param>],
-		'timeout'         => [qw< >],
-	},
-);
 
 sub _handle_report {
 	my ($self, $report) = @_;

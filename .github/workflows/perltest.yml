@@ -15,9 +15,10 @@ jobs:
     #   The other indicates version numbers of perl
     # The words "os" and "perl" are free text here, they are like variable names.
     # GitHub Action will run the job on 3x2 = 6 different setups
+    # not sure opensmtpd will work on , 'windows-latest'
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        os: ['ubuntu-latest', 'macos-latest']
         perl: [ '5.16', 'latest' ]
 
     runs-on: ${{ matrix.os }}

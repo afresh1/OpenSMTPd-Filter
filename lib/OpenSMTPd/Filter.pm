@@ -7,6 +7,7 @@ use warnings  qw(FATAL utf8);    # fatalize encoding glitches
 use open      qw(:std :encoding(UTF-8)); # undeclared streams in UTF-8
 
 use Carp;
+use Time::HiRes qw< time >;
 
 # ABSTRACT: Easier filters for OpenSMTPd in perl
 # VERSION
@@ -42,11 +43,42 @@ sub new {
 	$params{input}  ||= \*STDIN;
 	$params{output} ||= \*STDOUT;
 
-	return bless {%params}, $class;
+	$params{output}->autoflush;
+
+	my $self = bless \%params, $class;
+	return $self->_init;
 }
 
-sub ready { ... }
+sub _init {
+	my ($self) = @_;
 
+	my $fh = $self->{input};
+	my $blocking = $fh->blocking
+	    // die "Unable to get blocking on input: $!";
+	$fh->blocking(0) // die "Unable to set input to non-blocking: $!";
+
+	my $timeout = 0.25;   # no idea how long we should actually wait
+	my $now     = time;
+
+	my %config;
+	while ( not $self->{_ready} and ( time - $now ) < $timeout ) {
+		my $line = $fh->getline // next;
+		chomp $line;
+		$self->_dispatch($line);
+		$now = time; # continue waiting, we got a line
+	}
+
+	$fh->blocking($blocking)
+	    // die "Unable to reset blocking on input: $!";
+
+	return $self;
+}
+
+sub ready {
+	my ($self) = @_;
+	croak("Input stream is not ready") unless $self->{_ready};
+	...;
+}
 
 # The char "|" may only appear in the last field of a payload, in which
 # case it should be considered a regular char and not a separator.  Other
@@ -68,10 +100,13 @@ sub _dispatch {
 sub _handle_config {
 	my ($self, $config) = @_;
 
+	return $self->{_ready} = $config
+	    if $config eq 'ready';
+
 	my ($key, $value) = split /\|/, $config, 2;
 	$self->{_config}->{$key} = $value;
 
-	return 1;
+	return $key, $value;
 }
 
 

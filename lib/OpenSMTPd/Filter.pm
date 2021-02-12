@@ -125,23 +125,26 @@ sub _handle_report {
 	my %report;
 	@report{@report_fields} = split /\|/, $report, @report_fields;
 
-	if ( my $events = $report_events{ $report{subsystem} // '' } ) {
-		if ( my $fields = $events->{ $report{event} // '' } ) {
-			my $suffix = delete $report{suffix};
-			@report{ @{$fields} } = split /\|/, $suffix, @{$fields}
-				if @{$fields};
+	my @fields = $self->_report_fields_for(@report{qw< subsystem event >});
 
-			# TODO: Store this in a more useful way
-			push @{ $self->{_reports}->{ $report{session} } },
-			    \%report;
+	my $suffix = delete $report{suffix};
+	@report{ @fields } = split /\|/, $suffix, @fields if @fields;
 
-			return {%report};
-		}
+	# TODO: Store this in a more useful way
+	push @{ $self->{_reports}->{ $report{session} } }, \%report;
+
+	return {%report};
+}
+
+sub _report_fields_for {
+	my ($self, $subsystem, $event) = @_;
+
+	if ( $subsystem and my $events = $report_events{$subsystem} ) {
+		return @{ $events->{$event} } if $event and $events->{$event};
 	}
 
-	my $subsystem
-	    = defined $report{subsystem} ? "'$report{subsystem}'" : "undef";
-	my $event = defined $report{event} ? "'$report{event}'" : "undef";
+	$subsystem = defined $subsystem ? "'$subsystem'" : "undef";
+	$event     = defined $event ? "'$event'" : "undef";
 	croak("Unsupported report from $subsystem event $event");
 }
 

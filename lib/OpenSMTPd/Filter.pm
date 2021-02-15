@@ -77,7 +77,11 @@ sub _init {
 sub ready {
 	my ($self) = @_;
 	croak("Input stream is not ready") unless $self->{_ready};
-	...;
+
+	while ( defined( my $line = $self->{input}->getline ) ) {
+		chomp $line;
+		$self->_dispatch($line);
+	}
 }
 
 # The char "|" may only appear in the last field of a payload, in which
@@ -125,13 +129,33 @@ sub _handle_report {
 	my %report;
 	@report{@report_fields} = split /\|/, $report, @report_fields;
 
-	my @fields = $self->_report_fields_for(@report{qw< subsystem event >});
-
+	my $event  = $report{event} // '';
 	my $suffix = delete $report{suffix};
-	@report{ @fields } = split /\|/, $suffix, @fields if @fields;
 
-	# TODO: Store this in a more useful way
-	push @{ $self->{_reports}->{ $report{session} } }, \%report;
+	my %params;
+	my @fields = $self->_report_fields_for( @report{qw< subsystem event >});
+	@params{ @fields } = split /\|/, $suffix, @fields
+	    if @fields;
+
+	my $session = $self->{_sessions}->{ $report{session} } ||= {};
+
+	if ( $event =~ /^tx-/ ) {
+		my $message = $session->{messages}->{
+		    $params{'message-id'} } ||= {};
+		$message->{$_} = $params{$_} for keys %params;
+	}
+
+	%report = ( %report, %params );
+
+	$session->{state}->{$_} = $report{$_} for keys %report;
+	push @{ $session->{events} }, \%report;
+
+	# If the session disconncted we can't do anything more with it
+	# Eventually we might allow registering to do something with
+	# this event, would be a good spot to log stats or something.
+	if ( $event eq 'link-disconnect' ) {
+		delete $self->{_sessions}->{ $report{session} };
+	}
 
 	return {%report};
 }
@@ -144,7 +168,7 @@ sub _report_fields_for {
 	}
 
 	$subsystem = defined $subsystem ? "'$subsystem'" : "undef";
-	$event     = defined $event ? "'$event'" : "undef";
+	$event     = defined $event     ? "'$event'"     : "undef";
 	croak("Unsupported report from $subsystem event $event");
 }
 

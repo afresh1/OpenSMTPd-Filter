@@ -78,6 +78,10 @@ sub ready {
 	my ($self) = @_;
 	croak("Input stream is not ready") unless $self->{_ready};
 
+	$self->{output}->say("register|report|smtp-in|$_")
+	    for sort keys %{ $report_events{'smtp-in'} };
+	$self->{output}->say("register|ready");
+
 	while ( defined( my $line = $self->{input}->getline ) ) {
 		chomp $line;
 		$self->_dispatch($line);

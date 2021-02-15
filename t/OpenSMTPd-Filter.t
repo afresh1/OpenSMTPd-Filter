@@ -20,11 +20,11 @@ like dies { $filter->ready }, qr{\QInput stream is not ready},
 
 {
 	my $input = IO::File->new_tmpfile;
-	$input->print("config|foo|bar\n");
-	$input->print("config|foo|baz\n");
-	$input->print("config|qux|quux\n");
-	$input->print("config|ready\n");
-	$input->print("config|ignored|value\n");
+	$input->say("config|foo|bar");
+	$input->say("config|foo|baz");
+	$input->say("config|qux|quux");
+	$input->say("config|ready");
+	$input->say("config|ignored|value");
 	$input->flush;
 	$input->seek(0,0);
 
@@ -46,6 +46,42 @@ like dies { $filter->ready }, qr{\QInput stream is not ready},
 
 	is $f->{_config}, { foo => 'bar', qux => 'quux' },
 	    "But if we get a config value during processing we update it";
+}
+
+{
+	my $input = IO::File->new_tmpfile;
+	$input->say("config|ready");
+	$input->flush;
+	$input->seek(0,0);
+
+	my $recv   = '';
+	open my $output, '>', \$recv or die $!;
+
+	my $f = CLASS->new( input => $input, output => $output );
+	$f->ready;
+
+	is [ split /\n/, $recv ], [
+		'register|report|smtp-in|filter-report',
+		'register|report|smtp-in|filter-response',
+		'register|report|smtp-in|link-auth',
+		'register|report|smtp-in|link-connect',
+		'register|report|smtp-in|link-disconnect',
+		'register|report|smtp-in|link-greeting',
+		'register|report|smtp-in|link-identify',
+		'register|report|smtp-in|link-tls',
+		'register|report|smtp-in|protocol-client',
+		'register|report|smtp-in|protocol-server',
+		'register|report|smtp-in|timeout',
+		'register|report|smtp-in|tx-begin',
+		'register|report|smtp-in|tx-commit',
+		'register|report|smtp-in|tx-data',
+		'register|report|smtp-in|tx-envelope',
+		'register|report|smtp-in|tx-mail',
+		'register|report|smtp-in|tx-rcpt',
+		'register|report|smtp-in|tx-reset',
+		'register|report|smtp-in|tx-rollback',
+		'register|ready',
+	], "Recieved expected initialization";
 }
 
 done_testing;

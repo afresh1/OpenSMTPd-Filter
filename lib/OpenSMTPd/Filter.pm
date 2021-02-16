@@ -45,6 +45,26 @@ sub new {
 
 	$params{output}->autoflush;
 
+	my $check_supported_events;
+	$check_supported_events = sub {
+		my ($c, $e, $ms) = @_;
+		my $m = shift @{ $ms } || return;
+
+		my @s = sort keys %{ $c || {} };
+		if ( my @u = grep { !$e->{$_} } @s ) {
+			my $s = @u == 1 ? '' : 's';
+			croak("Unsupported $m$s @u");
+		}
+
+		$check_supported_events->( $c->{$_}, $e->{$_}, $ms ) for @s;
+	};
+
+	$check_supported_events->(
+	    $params{on},
+	    { report => \%report_events },
+	    ["event type", "event subsystem", "event"]
+	);
+
 	my $self = bless \%params, $class;
 	return $self->_init;
 }
@@ -161,6 +181,9 @@ sub _handle_report {
 		delete $self->{_sessions}->{ $report{session} };
 	}
 
+	my $cb = $self->_cb_for( report => @report{qw< subsystem event >} );
+	$cb->($session) if $cb;
+
 	return {%report};
 }
 
@@ -174,6 +197,17 @@ sub _report_fields_for {
 	$subsystem = defined $subsystem ? "'$subsystem'" : "undef";
 	$event     = defined $event     ? "'$event'"     : "undef";
 	croak("Unsupported report from $subsystem event $event");
+}
+
+sub _cb_for {
+	my ($self, @lookup) = @_;
+
+	my $cb = $self->{on};
+	$cb = $cb->{$_} || {} for @lookup;
+
+	return $cb if ref $cb eq 'CODE';
+
+	return;
 }
 
 1;

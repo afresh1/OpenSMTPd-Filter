@@ -18,6 +18,20 @@ is $filter->{_config}, { foo => 'bar|baz' }, "Set config correctly";
 like dies { $filter->ready }, qr{\QInput stream is not ready},
     "Trying to go ready without ready from input stream is fatal";
 
+like dies { CLASS->new( on => { nonexist => {}, unsupported => [] } ) },
+    qr{\QUnsupported event types nonexist unsupported },
+    "Trying to listen on unsupported type throws an exception";
+
+like dies { CLASS->new( on => { report => {
+        nonexist => {}, unsupported => [] } } ) },
+    qr{\QUnsupported event subsystems nonexist unsupported },
+    "Trying to listen on unsupported subsystems throws an exception";
+
+like dies { CLASS->new( on => { report => { 'smtp-in' => {
+        nonexist => {}, unsupported => [] } } } ) },
+    qr{\QUnsupported events nonexist unsupported },
+    "Trying to listen on unsupported events throws an exception";
+
 {
 	my $input = IO::File->new_tmpfile;
 	$input->say("config|foo|bar");

@@ -1,6 +1,8 @@
 use Test2::V0 -target => 'OpenSMTPd::Filter',
 	qw< ok is like dies hash field E etc done_testing >;
 
+use Storable qw< dclone >;
+
 ok my $filter = CLASS->new, "Created a new $CLASS instance";
 
 is $filter->_handle_report(
@@ -242,6 +244,89 @@ EOL
 	}, "Got the timeout event";
 
 	is $f->{_sessions}, {}, "No more sessions after they all disconnected";
+}
+
+{
+	my @events;
+	my $cb = sub { push @events, dclone($_[0]) };
+	my $f = CLASS->new(
+		on => { report => { 'smtp-in' => {
+			'link-connect'    => $cb,
+			'filter-response' => $cb,
+			'link-disconnect' => $cb,
+		} } },
+	);
+
+	$f->_dispatch($_) for (
+'report|0.6|1613354148.037118|smtp-in|link-connect|a5003f502d509539|localhost|pass|[::1]:13393|[::1]:25',
+'report|0.6|1613354148.037240|smtp-in|filter-response|a5003f502d509539|connected|proceed',
+'report|0.6|1613354148.037249|smtp-in|protocol-server|a5003f502d509539|220 trillian.home.hewus.com ESMTP OpenSMTPD',
+'report|0.6|1613354148.037302|smtp-in|link-greeting|a5003f502d509539|trillian.home.hewus.com',
+'report|0.6|1613354153.366420|smtp-in|protocol-client|a5003f502d509539|ehlo mail',
+'report|0.6|1613354153.366873|smtp-in|filter-response|a5003f502d509539|ehlo|proceed',
+'report|0.6|1613354153.366876|smtp-in|link-identify|a5003f502d509539|EHLO|mail',
+'report|0.6|1613354153.366896|smtp-in|protocol-server|a5003f502d509539|250-trillian.home.hewus.com Hello mail [::1], pleased to meet you',
+'report|0.6|1613354153.366901|smtp-in|protocol-server|a5003f502d509539|250-8BITMIME',
+'report|0.6|1613354153.366903|smtp-in|protocol-server|a5003f502d509539|250-ENHANCEDSTATUSCODES',
+'report|0.6|1613354153.366905|smtp-in|protocol-server|a5003f502d509539|250-SIZE 36700160',
+'report|0.6|1613354153.366907|smtp-in|protocol-server|a5003f502d509539|250-DSN',
+'report|0.6|1613354153.366909|smtp-in|protocol-server|a5003f502d509539|250 HELP',
+'report|0.6|1613354453.375358|smtp-in|timeout|a5003f502d509539',
+'report|0.6|1613354453.375366|smtp-in|link-disconnect|a5003f502d509539',
+	);
+
+	my $event = hash {
+		field version   => E();
+		field timestamp => E();
+		field subsystem => E();
+		field event     => E();
+		field session   => E();
+		etc();
+	};
+
+	my %state = (
+		'version'   => '0.6',
+		'timestamp' => '1613354148.037118',
+		'subsystem' => 'smtp-in',
+		'event'     => 'link-connect',
+		'session'   => 'a5003f502d509539',
+
+		'src'    => '[::1]:13393',
+		'dest'   => '[::1]:25',
+		'rdns'   => 'localhost',
+		'fcrdns' => 'pass',
+	);
+
+	is \@events, [
+		{ events => [ ( $event ) x  1 ], state => {%state} },
+		{ events => [ ( $event ) x  2 ], state => {%state,
+			'timestamp' => '1613354148.037240',
+			'event'     => 'filter-response',
+			'response'  => 'proceed',
+			'param'     => undef,
+			'phase'     => 'connected',
+		} },
+		{ events => [ ( $event ) x 6 ], state => {%state,
+			'timestamp' => '1613354153.366873',
+			'event'     => 'filter-response',
+			'response'  => 'proceed',
+			'param'     => undef,
+			'phase'     => 'ehlo',
+			'command'   => 'ehlo mail',
+			'hostname'  => 'trillian.home.hewus.com',
+		} },
+		{ events => [ ( $event ) x 15 ], state => {%state,
+			'timestamp' => '1613354453.375366',
+			'event'     => 'link-disconnect',
+			'response'  => '250 HELP',
+			'param'     => undef,
+			'phase'     => 'ehlo',
+			'method'    => 'EHLO',
+			'command'   => 'ehlo mail',
+			'identity'  => 'mail',
+			'hostname'  => 'trillian.home.hewus.com',
+		} },
+	], "Got the events we expected";
 }
 
 done_testing;

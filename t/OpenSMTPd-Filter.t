@@ -3,7 +3,15 @@ use Test2::V0 -target => 'OpenSMTPd::Filter',
 
 use IO::File;
 
-diag "Testing $CLASS on perl $^V";
+my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
+	require OpenBSD::Pledge } };
+
+# Open these before we maybe pledge
+my $input  = IO::File->new_tmpfile;
+my $output = IO::File->new_tmpfile;
+
+diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
+OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 
 ok CLASS, "Loaded $CLASS";
 
@@ -33,7 +41,7 @@ like dies { CLASS->new( on => { report => { 'smtp-in' => {
     "Trying to listen on unsupported events throws an exception";
 
 {
-	my $input = IO::File->new_tmpfile;
+	$_->seek(0,0), $_->truncate(0) for $input, $output;
 	$input->say("config|foo|bar");
 	$input->say("config|foo|baz");
 	$input->say("config|qux|quux");
@@ -63,18 +71,18 @@ like dies { CLASS->new( on => { report => { 'smtp-in' => {
 }
 
 {
-	my $input = IO::File->new_tmpfile;
+	$_->seek(0,0), $_->truncate(0) for $input, $output;
+
 	$input->say("config|ready");
 	$input->flush;
 	$input->seek(0,0);
 
-	my $recv   = '';
-	open my $output, '>', \$recv or die $!;
-
 	my $f = CLASS->new( input => $input, output => $output );
 	$f->ready;
 
-	is [ split /\n/, $recv ], [
+	$output->seek(0,0);
+
+	is [ map { chomp ; $_ } $output->getlines ], [
 		'register|report|smtp-in|filter-report',
 		'register|report|smtp-in|filter-response',
 		'register|report|smtp-in|link-auth',

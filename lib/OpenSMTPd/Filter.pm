@@ -6,6 +6,10 @@ use warnings;  # on by default
 use warnings  qw(FATAL utf8);    # fatalize encoding glitches
 use open      qw(:std :encoding(UTF-8)); # undeclared streams in UTF-8
 
+# This happens automatically, but to make pledge(2) happy
+# it has to happen earlier than it would otherwise.
+use IO::File;
+
 use Carp;
 use Time::HiRes qw< time >;
 

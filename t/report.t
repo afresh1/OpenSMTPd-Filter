@@ -1,7 +1,18 @@
 use Test2::V0 -target => 'OpenSMTPd::Filter',
-	qw< ok is like dies hash field E etc done_testing >;
+	qw< ok is like dies hash field E etc diag done_testing >;
 
 use Storable qw< dclone >;
+use IO::File;
+
+my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
+	require OpenBSD::Pledge } };
+
+# Open these before possibly pledging
+my $input  = IO::File->new_tmpfile;
+my $output = IO::File->new_tmpfile;
+
+diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
+OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 
 ok my $filter = CLASS->new, "Created a new $CLASS instance";
 
@@ -32,7 +43,7 @@ like dies { $filter->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
     "Unsupported report event throws exception";
 
 {
-	my $input = IO::File->new_tmpfile;
+	$_->seek(0,0), $_->truncate(0) for $input, $output;
 	$input->say("config|ready");
 
 	$input->print(<<'EOL');
@@ -127,9 +138,6 @@ EOL
 
 	$input->flush;
 	$input->seek(0,0);
-
-	my $recv   = '';
-	open my $output, '>', \$recv or die $!;
 
 	my $f = CLASS->new( input => $input, output => $output );
 	$f->ready;

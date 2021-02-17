@@ -1,5 +1,11 @@
 use Test2::V0 -target => 'OpenSMTPd::Filter',
-	qw< ok like mock dies done_testing >;
+	qw< ok like mock dies diag done_testing >;
+
+my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
+	require OpenBSD::Pledge } };
+
+diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
+OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 
 ok my $filter = CLASS->new, "Created a new $CLASS instance";
 

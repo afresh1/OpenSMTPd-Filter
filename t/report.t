@@ -255,7 +255,7 @@ EOL
 
 {
 	my @events;
-	my $cb = sub { push @events, dclone($_[0]) };
+	my $cb = sub { push @events, dclone(\@_) };
 	my $f = CLASS->new(
 		on => { report => { 'smtp-in' => {
 			'link-connect'    => $cb,
@@ -305,15 +305,18 @@ EOL
 	);
 
 	is \@events, [
-		{ events => [ ( $event ) x  1 ], state => {%state} },
-		{ events => [ ( $event ) x  2 ], state => {%state,
+		[ 'link-connect',
+		    { events => [ ( $event ) x  1 ], state => {%state} } ],
+		[ 'filter-response',
+		    { events => [ ( $event ) x  2 ], state => {%state,
 			'timestamp' => '1613354148.037240',
 			'event'     => 'filter-response',
 			'response'  => 'proceed',
 			'param'     => undef,
 			'phase'     => 'connected',
-		} },
-		{ events => [ ( $event ) x 6 ], state => {%state,
+		} } ],
+		[ 'filter-response',
+		    { events => [ ( $event ) x 6 ], state => {%state,
 			'timestamp' => '1613354153.366873',
 			'event'     => 'filter-response',
 			'response'  => 'proceed',
@@ -321,8 +324,9 @@ EOL
 			'phase'     => 'ehlo',
 			'command'   => 'ehlo mail',
 			'hostname'  => 'trillian.home.hewus.com',
-		} },
-		{ events => [ ( $event ) x 15 ], state => {%state,
+		} } ],
+		[ 'link-disconnect',
+		    { events => [ ( $event ) x 15 ], state => {%state,
 			'timestamp' => '1613354453.375366',
 			'event'     => 'link-disconnect',
 			'response'  => '250 HELP',
@@ -332,7 +336,7 @@ EOL
 			'command'   => 'ehlo mail',
 			'identity'  => 'mail',
 			'hostname'  => 'trillian.home.hewus.com',
-		} },
+		} } ],
 	], "Got the events we expected";
 }
 

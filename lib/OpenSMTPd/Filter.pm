@@ -223,7 +223,7 @@ sub _handle_report {
 	}
 
 	my $cb = $self->_cb_for( report => @report{qw< subsystem event >} );
-	$cb->($session) if $cb;
+	$cb->($report{event}, $session) if $cb;
 
 	return $session->{events}->[-1];
 }

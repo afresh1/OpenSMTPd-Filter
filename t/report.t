@@ -160,7 +160,8 @@ EOL
                 events   => [ ($event) x 28 ],
                 messages => {
                     '5e170a6f' => {
-                        'address'      => 'afresh1',
+                        'mail' => [ 'aahf' ],
+                        'rcpt' => [ 'afresh1' ],
                         'envelope-id'  => '5e170a6fd549b5d5',
                         'message-id'   => '5e170a6f',
                         'message-size' => '559',
@@ -179,16 +180,12 @@ EOL
                     'dest'         => '[::1]:25',
                     'hostname'     => 'mail.example.test',
                     'method'       => 'HELO',
-                    'address'      => 'afresh1',
-                    'envelope-id'  => '5e170a6fd549b5d5',
-                    'message-id'   => '5e170a6f',
-                    'message-size' => '559',
                     'event'        => 'timeout',
                     'response'     => '250 2.0.0 5e170a6f Message accepted for delivery',
-                    'result'       => 'ok',
                     'command'      => '.',
                     'phase'        => 'commit',
                     'param'        => undef,
+                    'message-id'   => '5e170a6f',
                 }
 
             },
@@ -196,14 +193,16 @@ EOL
                 events   => [ ($event) x 59 ],
                 messages => {
                     '71df546e' => {
-                        'address'      => 'root',
+                        'mail' => [ 'andrew' ],
+                        'rcpt' => [ 'afresh1', 'root' ],
                         'envelope-id'  => '71df546ee5247710',
                         'message-id'   => '71df546e',
                         'message-size' => '475',
                         'result'       => 'ok'
                     },
                     '9e8fd416' => {
-                        'address'      => 'afresh1',
+                        'mail' => [ 'aahf' ],
+                        'rcpt' => [ 'afresh1' ],
                         'envelope-id'  => '9e8fd41612d29cc8',
                         'message-id'   => '9e8fd416',
                         'message-size' => '545',
@@ -211,22 +210,18 @@ EOL
                     }
                 },
                 state => {
-                    'address'      => 'afresh1',
                     'command'      => 'quit',
                     'dest'         => '[::1]:25',
-                    'envelope-id'  => '9e8fd41612d29cc8',
                     'event'        => 'protocol-server',
                     'fcrdns'       => 'pass',
                     'hostname'     => 'mail.example.test',
                     'identity'     => 'mail',
-                    'message-id'   => '9e8fd416',
-                    'message-size' => '545',
                     'method'       => 'EHLO',
+                    'message-id'   => '9e8fd416',
                     'param'        => undef,
                     'phase'        => 'quit',
                     'rdns'         => 'localhost',
                     'response'     => '221 2.0.0 Bye',
-                    'result'       => 'ok',
                     'session'      => '68d0e60751ca8d79',
                     'src'          => '[::1]:33310',
                     'subsystem'    => 'smtp-in',

@@ -193,29 +193,39 @@ sub _handle_report {
 	    if @fields;
 
 	my $session = $self->{_sessions}->{ $report{session} } ||= {};
-
-	if ( $event =~ /^tx-/ ) {
-		my $message = $session->{messages}->{
-		    $params{'message-id'} } ||= {};
-		$message->{$_} = $params{$_} for keys %params;
-	}
-
-	%report = ( %report, %params );
-
 	$session->{state}->{$_} = $report{$_} for keys %report;
-	push @{ $session->{events} }, \%report;
+	push @{ $session->{events} }, { %report, %params };
 
 	# If the session disconncted we can't do anything more with it
-	# Eventually we might allow registering to do something with
-	# this event, would be a good spot to log stats or something.
-	if ( $event eq 'link-disconnect' ) {
-		delete $self->{_sessions}->{ $report{session} };
+	delete $self->{_sessions}->{ $report{session} }
+		if $event eq 'link-disconnect';
+
+	if ( $event =~ /^tx-(.*)$/ ) {
+		my $phase = $1;
+
+		my $message = $session->{messages}->{
+		    $params{'message-id'} } ||= {};
+
+		# Tell the session which message is the current one
+		# since we store them by id not in a list.
+		$session->{state}->{'message-id'} = $params{'message-id'};
+
+		if ( $phase eq 'rcpt' or $phase eq 'mail' ) {
+			push @{ $message->{$phase} }, $params{address};
+			$message->{result} = $params{result};
+		}
+		else {
+			$message->{$_} = $params{$_} for keys %params;
+		}
+	}
+	else {
+		$session->{state}->{$_} = $params{$_} for keys %params;
 	}
 
 	my $cb = $self->_cb_for( report => @report{qw< subsystem event >} );
 	$cb->($session) if $cb;
 
-	return {%report};
+	return $session->{events}->[-1];
 }
 
 sub _report_fields_for {

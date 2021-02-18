@@ -41,6 +41,33 @@ my %report_events = (
 	},
 );
 
+my @filter_fields = qw< version timestamp subsystem phase session opaque-token >;
+my %filter_events = (
+	'smtp-in' => {
+		'connect'   => [qw< rdns fcrdns src dest >],
+		'helo'      => [qw< identity >],
+		'ehlo'      => [qw< identity >],
+		'starttls'  => [qw< tls-string >],
+		'auth'      => [qw< auth >],
+		'mail-from' => [qw< address >],
+		'rcpt-to'   => [qw< address >],
+		'data'      => [qw< >],
+		'data-line' => [qw< line >],
+		'commit'    => [qw< >],
+	},
+);
+
+my @filter_result_fields = qw< session opaque-token >;
+my @filter_result_decisions = (
+	# 'data-line' => [qw< line >], # special case
+	'proceed'    => [qw< >],
+	'junk'       => [qw< >],
+	'reject'     => [qw< error >],
+	'disconnect' => [qw< error >],
+	'rewrite'    => [qw< parameter >],
+	'report'     => [qw< parameter >],
+);
+
 sub new {
 	my ( $class, %params ) = @_;
 

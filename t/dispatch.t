@@ -4,6 +4,10 @@ use Test2::V0 -target => 'OpenSMTPd::Filter',
 my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
 	require OpenBSD::Pledge } };
 
+# Failed tests attempt to load this and cause pledge violations.
+{ local $@; eval { local $SIG{__DIE__};
+    require Test2::API::Breakage } };
+
 diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
 OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 

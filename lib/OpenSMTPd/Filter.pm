@@ -203,12 +203,11 @@ sub _handle_report {
 	if ( $event =~ /^tx-(.*)$/ ) {
 		my $phase = $1;
 
-		my $message = $session->{messages}->{
-		    $params{'message-id'} } ||= {};
+		push @{ $session->{messages} },
+		    $session->{state}->{message} = {}
+		        if $phase eq 'begin';
 
-		# Tell the session which message is the current one
-		# since we store them by id not in a list.
-		$session->{state}->{'message-id'} = $params{'message-id'};
+		my $message = $session->{messages}->[-1];
 
 		if ( $phase eq 'rcpt' or $phase eq 'mail' ) {
 			push @{ $message->{$phase} }, $params{address};

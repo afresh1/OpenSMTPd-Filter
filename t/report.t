@@ -154,21 +154,36 @@ EOL
 		field session   => E();
 		etc();
 	};
+	my @messages = (
+	    {   'mail'         => ['aahf'],
+	        'rcpt'         => ['afresh1'],
+	        'envelope-id'  => '5e170a6fd549b5d5',
+	        'message-id'   => '5e170a6f',
+	        'message-size' => '559',
+	        'result'       => 'ok'
+	    },
+	    {   'mail'         => ['andrew'],
+	        'rcpt'         => [ 'afresh1', 'root' ],
+	        'envelope-id'  => '71df546ee5247710',
+	        'message-id'   => '71df546e',
+	        'message-size' => '475',
+	        'result'       => 'ok'
+	    },
+	    {   'mail'         => ['aahf'],
+	        'rcpt'         => ['afresh1'],
+	        'envelope-id'  => '9e8fd41612d29cc8',
+	        'message-id'   => '9e8fd416',
+	        'message-size' => '545',
+	        'result'       => 'ok'
+	    }
+	);
 
         my %expect = (
             '3647ceea74a815de' => {
                 events   => [ ($event) x 28 ],
-                messages => {
-                    '5e170a6f' => {
-                        'mail' => [ 'aahf' ],
-                        'rcpt' => [ 'afresh1' ],
-                        'envelope-id'  => '5e170a6fd549b5d5',
-                        'message-id'   => '5e170a6f',
-                        'message-size' => '559',
-                        'result'       => 'ok'
-                    }
-                },
+                messages => [ $messages[0] ],
                 state => {
+                    'message'      => $messages[0],
                     'version'      => '0.6',
                     'timestamp'    => '1613356167.075372',
                     'subsystem'    => 'smtp-in',
@@ -185,31 +200,14 @@ EOL
                     'command'      => '.',
                     'phase'        => 'commit',
                     'param'        => undef,
-                    'message-id'   => '5e170a6f',
                 }
 
             },
             '68d0e60751ca8d79' => {
                 events   => [ ($event) x 59 ],
-                messages => {
-                    '71df546e' => {
-                        'mail' => [ 'andrew' ],
-                        'rcpt' => [ 'afresh1', 'root' ],
-                        'envelope-id'  => '71df546ee5247710',
-                        'message-id'   => '71df546e',
-                        'message-size' => '475',
-                        'result'       => 'ok'
-                    },
-                    '9e8fd416' => {
-                        'mail' => [ 'aahf' ],
-                        'rcpt' => [ 'afresh1' ],
-                        'envelope-id'  => '9e8fd41612d29cc8',
-                        'message-id'   => '9e8fd416',
-                        'message-size' => '545',
-                        'result'       => 'ok'
-                    }
-                },
+                messages => [ @messages[1,2] ],
                 state => {
+                    'message'      => $messages[2],
                     'command'      => 'quit',
                     'dest'         => '[::1]:25',
                     'event'        => 'protocol-server',
@@ -217,7 +215,6 @@ EOL
                     'hostname'     => 'mail.example.test',
                     'identity'     => 'mail',
                     'method'       => 'EHLO',
-                    'message-id'   => '9e8fd416',
                     'param'        => undef,
                     'phase'        => 'quit',
                     'rdns'         => 'localhost',

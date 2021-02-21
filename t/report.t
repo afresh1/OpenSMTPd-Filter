@@ -35,15 +35,15 @@ is $filter->_handle_report(
 }, "Able to handle_report for a link-connect";
 
 like dies { $filter->_handle_report('0.5|1576146008.006099') },
-    qr{^\QUnsupported report from undef event undef at },
+    qr{^\QUnsupported report undef|undef at },
     "Undef report event throws exception";
 
 like dies { $filter->_handle_report('0.5|1576146008.006099|xxx|yyy') },
-    qr{^\QUnsupported report from 'xxx' event 'yyy' at },
+    qr{^\QUnsupported report 'xxx'|'yyy' at },
     "Unsupported report type throws exception";
 
 like dies { $filter->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
-    qr{^\QUnsupported report from 'smtp-in' event 'unknown' at },
+    qr{^\QUnsupported report 'smtp-in'|'unknown' at },
     "Unsupported report event throws exception";
 
 {

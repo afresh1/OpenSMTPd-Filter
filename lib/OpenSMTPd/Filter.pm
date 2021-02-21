@@ -232,14 +232,18 @@ sub _handle_report {
 
 sub _report_fields_for {
 	my ($self, $subsystem, $event) = @_;
+	return $self->_fields_for('report', \%report_events, $subsystem, $event );
+}
 
-	if ( $subsystem and my $events = $report_events{$subsystem} ) {
-		return @{ $events->{$event} } if $event and $events->{$event};
+sub _fields_for {
+	my ($self, $type, $map, $subsystem, $item) = @_;
+
+	if ( $subsystem and $item and my $items = $map->{$subsystem} ) {
+		return @{ $items->{$item} } if $items->{$item};
 	}
 
-	$subsystem = defined $subsystem ? "'$subsystem'" : "undef";
-	$event     = defined $event     ? "'$event'"     : "undef";
-	croak("Unsupported report from $subsystem event $event");
+	$_ = defined $_ ? "'$_'" : "undef" for $subsystem, $item;
+	croak("Unsupported $type $subsystem|$item");
 }
 
 sub _cb_for {

@@ -10,6 +10,8 @@ my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
 my $input  = IO::File->new_tmpfile;
 my $output = IO::File->new_tmpfile;
 
+$_->binmode(":raw") for $input, $output;
+
 # Failed tests attempt to load this and cause pledge violations.
 { local $@; eval { local $SIG{__DIE__};
     require Test2::API::Breakage } };
@@ -108,6 +110,31 @@ like dies { CLASS->new( on => { report => { 'smtp-in' => {
 		'register|report|smtp-in|tx-rollback',
 		'register|ready',
 	], "Recieved expected initialization";
+}
+
+{
+	$_->seek(0,0), $_->truncate(0) for $input, $output;
+	$input->say("config|ready");
+
+	# when happens when a connection sends ^C
+	my $fail = join '', map { chr } 0xFF, 0xF4, 0xFF, 0xFD, 0x06;
+	$input->say("report|0.6|12345|smtp-in|protocol-client|abcd|$fail");
+
+	$input->flush;
+	$input->seek(0,0);
+
+	my $f = CLASS->new( input => $input, output => $output );
+
+	is dies { $f->ready }, undef,
+	    "The client can send garbage and we just take it";
+
+	like $f->{_sessions}->{abcd}, {
+		events => [{ command => $fail }],
+		state  => {
+			event   => 'protocol-client',
+			command => $fail,
+		},
+	};
 }
 
 done_testing;

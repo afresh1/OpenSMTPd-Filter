@@ -74,7 +74,11 @@ sub new {
 	$params{input}  ||= \*STDIN;
 	$params{output} ||= \*STDOUT;
 
+	STDERR->autoflush;
 	$params{output}->autoflush;
+
+	# We expect to read and write bytes from the remote
+	$_->binmode(':raw') for @params{qw< input output >};
 
 	my $check_supported_events;
 	$check_supported_events = sub {

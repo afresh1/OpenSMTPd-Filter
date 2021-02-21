@@ -114,6 +114,7 @@ sub _init {
 	my %config;
 	while ( not $self->{_ready} and ( time - $now ) < $timeout ) {
 		my $line = $fh->getline // next;
+		print STDERR $line if $self->{debug};
 		chomp $line;
 		$self->_dispatch($line);
 		$now = time; # continue waiting, we got a line
@@ -132,8 +133,10 @@ sub ready {
 	$self->{output}->say("register|report|smtp-in|$_")
 	    for sort keys %{ $report_events{'smtp-in'} };
 	$self->{output}->say("register|ready");
+	STDERR->say("register|ready") if $self->{debug};
 
 	while ( defined( my $line = $self->{input}->getline ) ) {
+		print STDERR $line if $self->{debug};
 		chomp $line;
 		$self->_dispatch($line);
 	}

@@ -118,7 +118,7 @@ sub _init {
 	my %config;
 	while ( not $self->{_ready} and ( time - $now ) < $timeout ) {
 		my $line = $fh->getline // next;
-		print STDERR $line if $self->{debug};
+		STDERR->print("< $line") if $self->{debug};
 		chomp $line;
 		$self->_dispatch($line);
 		$now = time; # continue waiting, we got a line
@@ -134,13 +134,16 @@ sub ready {
 	my ($self) = @_;
 	croak("Input stream is not ready") unless $self->{_ready};
 
-	$self->{output}->say("register|report|smtp-in|$_")
-	    for sort keys %{ $report_events{'smtp-in'} };
-	$self->{output}->say("register|ready");
-	STDERR->say("register|ready") if $self->{debug};
+	my @reports = map { "report|smtp-in|$_" }
+	    sort keys %{ $report_events{'smtp-in'} };
+
+	for (@reports, 'ready' ) {
+		STDERR->say("> register|$_") if $self->{debug};
+		$self->{output}->say("register|$_")
+	}
 
 	while ( defined( my $line = $self->{input}->getline ) ) {
-		print STDERR $line if $self->{debug};
+		STDERR->print("< $line") if $self->{debug};
 		chomp $line;
 		$self->_dispatch($line);
 	}

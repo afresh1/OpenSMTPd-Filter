@@ -197,7 +197,7 @@ sub _handle_report {
 
 	my $session = $self->{_sessions}->{ $report{session} } ||= {};
 	$session->{state}->{$_} = $report{$_} for keys %report;
-	push @{ $session->{events} }, { %report, %params };
+	push @{ $session->{events} }, { %report, %params, request => 'report' };
 
 	# If the session disconncted we can't do anything more with it
 	delete $self->{_sessions}->{ $report{session} }

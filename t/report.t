@@ -23,6 +23,7 @@ ok my $filter = CLASS->new, "Created a new $CLASS instance";
 is $filter->_handle_report(
 '0.5|1576146008.006099|smtp-in|link-connect|7641df9771b4ed00|mail.openbsd.org|pass|199.185.178.25:33174|45.77.67.80:25'
 ), {
+    request   => 'report',
     version   => '0.5',
     timestamp => '1576146008.006099',
     subsystem => 'smtp-in',
@@ -147,6 +148,7 @@ EOL
 	$f->ready;
 
 	my $event = hash {
+		field request   => 'report';
 		field version   => E();
 		field timestamp => E();
 		field subsystem => E();
@@ -231,6 +233,7 @@ EOL
 	is $f->{_sessions}, \%expect, "Got the sessions we expected";
 
 	is $f->_dispatch('report|0.6|1613344069.173652|smtp-in|link-disconnect|68d0e60751ca8d79'), {
+	    request   => 'report',
 	    version   => '0.6',
 	    timestamp => '1613344069.173652',
 	    subsystem => 'smtp-in',
@@ -240,6 +243,7 @@ EOL
 	ok !$f->{_sessions}->{'68d0e60751ca8d79'}, "Removed the session that disconnected";
 
 	is $f->_dispatch('report|0.6|1613356167.075380|smtp-in|link-disconnect|3647ceea74a815de'), {
+	    request   => 'report',
 	    version   => '0.6',
 	    timestamp => '1613356167.075380',
 	    subsystem => 'smtp-in',

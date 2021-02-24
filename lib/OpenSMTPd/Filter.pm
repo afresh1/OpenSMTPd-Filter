@@ -41,7 +41,7 @@ my %report_events = (
 	},
 );
 
-my @filter_fields = qw< version timestamp subsystem phase session opaque-token >;
+my @filter_fields = qw< version timestamp subsystem phase session opaque-token suffix >;
 my %filter_events = (
 	'smtp-in' => {
 		'connect'   => [qw< rdns fcrdns src dest >],
@@ -54,12 +54,14 @@ my %filter_events = (
 		'data'      => [qw< >],
 		'data-line' => [qw< line >],
 		'commit'    => [qw< >],
+
+		'data-lines' => sub { 'data-line' }, # special case
 	},
 );
 
 my @filter_result_fields = qw< session opaque-token >;
-my @filter_result_decisions = (
-	# 'data-line' => [qw< line >], # special case
+my %filter_result_decisions = (
+	#'dataline'   => [qw< line >], # special case
 	'proceed'    => [qw< >],
 	'junk'       => [qw< >],
 	'reject'     => [qw< error >],
@@ -71,6 +73,7 @@ my @filter_result_decisions = (
 sub new {
 	my ( $class, %params ) = @_;
 
+	$params{on}     ||= {};
 	$params{input}  ||= \*STDIN;
 	$params{output} ||= \*STDOUT;
 
@@ -96,7 +99,7 @@ sub new {
 
 	$check_supported_events->(
 	    $params{on},
-	    { report => \%report_events },
+	    { report => \%report_events, filter => \%filter_events },
 	    ["event type", "event subsystem", "event"]
 	);
 
@@ -137,7 +140,16 @@ sub ready {
 	my @reports = map { "report|smtp-in|$_" }
 	    sort keys %{ $report_events{'smtp-in'} };
 
-	for (@reports, 'ready' ) {
+	my %filters;
+	for my $subsystem (sort keys %{ $self->{on}->{filter}  }) {
+		for ( keys %{ $self->{on}->{filter}->{$subsystem}  } ) {
+			my $v = $filter_events{$subsystem}{$_};
+			my $phase = ref $v eq 'CODE' ? $v->($_) : $_;
+			$filters{"filter|$subsystem|$phase"} = 1;
+		}
+	}
+
+	for (@reports, sort( keys %filters ), 'ready' ) {
 		STDERR->say("> register|$_") if $self->{debug};
 		$self->{output}->say("register|$_")
 	}
@@ -232,14 +244,121 @@ sub _handle_report {
 	}
 
 	my $cb = $self->_cb_for( report => @report{qw< subsystem event >} );
-	$cb->($report{event}, $session) if $cb;
+	$cb->($event, $session) if $cb;
 
 	return $session->{events}->[-1];
 }
 
+sub _handle_filter {
+	my ($self, $filter) = @_;
+
+	my %filter;
+	@filter{@filter_fields} = split /\|/, $filter, @filter_fields;
+
+	my $suffix = delete $filter{suffix};
+
+	# For use in error messages
+	my $subsystem  = $filter{subsystem};
+	my $phase      = $filter{phase};
+        my $session_id = $filter{session};
+	$_ = defined $_ ? "'$_'" : "undef" for $subsystem, $phase, $session_id;
+
+	my %params;
+	my @fields = $self->_filter_fields_for( @filter{qw< subsystem phase >});
+	@params{ @fields } = split /\|/, $suffix, @fields
+	    if defined $suffix and @fields;
+
+	my $session = $self->{_sessions}->{ $filter{session} || '' }
+	    or croak("Unknown session $session_id in filter $subsystem|$phase");
+	push @{ $session->{events} }, { %filter, %params, request => 'filter' };
+
+	return $self->_handle_filter_data_line( $params{line}, \%filter, $session )
+            if $filter{subsystem} eq 'smtp-in'
+	   and $filter{phase}     eq 'data-line';
+
+	my $cb = $self->_cb_for( filter => @filter{qw< subsystem phase >} );
+	my @ret;
+	if ($cb) {
+		@ret = $cb->($filter{phase}, $session);
+	}
+	else {
+		carp("No handler for filter $subsystem|$phase, proceeding");
+		@ret = 'proceed';
+	}
+
+	my $decisions = $filter_result_decisions{ $ret[0] };
+	unless ( $decisions ) {
+		carp "Unknown return from filter $subsystem|$phase: @ret";
+
+		$ret[0]    = 'reject';
+		$decisions = $filter_result_decisions{ $ret[0] };
+	}
+	# Pass something as the reason for the rejection
+	push @ret, "550 Nope" if @ret == 1
+	     and ( $decisions->[0] || '' )  eq 'error';
+
+	carp(
+	    sprintf "Incorrect params from filter %s|%s, expected %s got %s",
+	        $subsystem, $phase,
+	        join( ' ', map {"'$_'"} 'decision', @$decisions ),
+	        join( ' ', map {"'$_'"} @ret ),
+	) unless @ret == 1 + @{$decisions};
+
+	my $response = join '|',
+	    'filter-result',
+	     @filter{qw< session opaque-token >},
+	     @ret;
+
+	STDERR->say("> $response") if $self->{debug};
+	$self->{output}->say($response);
+
+	return {%filter};
+}
+
+sub _handle_filter_data_line {
+	my ( $self, $line, $filter, $session ) = @_;
+	$line //= ''; # avoid uninit warnings
+
+	my @lines;
+	if ( my $cb = $self->_cb_for( filter => @{$filter}{qw< subsystem phase >} ) ) {
+		@lines = $cb->($filter->{phase}, $line, $session);
+	}
+
+	my $message = $session->{messages}->[-1];
+	push @{ $message->{'data-line'} }, $line;
+
+	if ( $line eq '.' ) {
+		my $cb = $self->_cb_for( filter => $filter->{subsystem}, 'data-lines' );
+		push @lines, $cb->('data-lines', $message->{'data-line'}, $session) if $cb;
+
+		# make sure we end the message;
+		push @lines, $line;
+	}
+
+	for ( map { $_ ? split /\n/ : $_  } @lines ) {
+		last if $message->{'sent-dot'};
+		my $response =  join '|',
+		    'filter-dataline',
+		    @{$filter}{qw< session opaque-token >},
+		    $_;
+		STDERR->say("> $response") if $self->{debug};
+		$self->{output}->say($response);
+		$message->{'sent-dot'} = 1 if  $_ eq '.';
+	}
+
+	return $filter;
+}
+
+
+
 sub _report_fields_for {
 	my ($self, $subsystem, $event) = @_;
 	return $self->_fields_for('report', \%report_events, $subsystem, $event );
+}
+
+sub _filter_fields_for {
+	my ($self, $subsystem, $phase) = @_;
+	return $self->_fields_for('filter', \%filter_events, $subsystem, $phase );
 }
 
 sub _fields_for {

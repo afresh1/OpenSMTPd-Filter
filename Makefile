@@ -28,7 +28,7 @@ test : $(CPANFILE_SNAPSHOT)
 # This target requires that you add 'requires "Devel::Cover";'
 # to the cpanfile and then run "carton" to install it.
 testcoverage : $(CPANFILE_SNAPSHOT)
-	$(CARTON) exec -- cover -test -ignore . -select ^lib
+	$(CARTON) exec -- cover --make "$(MAKE)" -test -ignore . -select ^lib
 
 $(MAKEFILE_TARGET): $(MAKEFILE_SHARE)
 	install -m 644 $< $@

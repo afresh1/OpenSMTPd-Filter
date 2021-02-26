@@ -4,3 +4,6 @@
 cpanfile.snapshot
 local/
 
+# Devel::Cover
+cover_db/
+

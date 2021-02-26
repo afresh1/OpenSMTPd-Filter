@@ -36,9 +36,8 @@ like dies { CLASS->new( on => { nonexist => {}, unsupported => [] } ) },
     qr{\QUnsupported event types nonexist unsupported },
     "Trying to listen on unsupported type throws an exception";
 
-like dies { CLASS->new( on => { report => {
-        nonexist => {}, unsupported => [] } } ) },
-    qr{\QUnsupported event subsystems nonexist unsupported },
+like dies { CLASS->new( on => { report => { nonexist => {} } } ) },
+    qr{\QUnsupported event subsystem nonexist },
     "Trying to listen on unsupported subsystems throws an exception";
 
 like dies { CLASS->new( on => { report => { 'smtp-in' => {

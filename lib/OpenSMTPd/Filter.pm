@@ -88,7 +88,7 @@ sub new {
 		my ($c, $e, $ms) = @_;
 		my $m = shift @{ $ms } || return;
 
-		my @s = sort keys %{ $c || {} };
+		my @s = sort keys %{$c};
 		if ( my @u = grep { !$e->{$_} } @s ) {
 			my $s = @u == 1 ? '' : 's';
 			croak("Unsupported $m$s @u");

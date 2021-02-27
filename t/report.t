@@ -1,11 +1,12 @@
-use Test2::V0 -target => 'OpenSMTPd::Filter',
-	qw< ok is like dies hash field E etc diag done_testing >;
+use Test2::V0
+    -target => 'OpenSMTPd::Filter',
+    qw< ok is like dies hash field E etc diag done_testing >;
 
 use Storable qw< dclone >;
 use IO::File;
 
 my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
-	require OpenBSD::Pledge } };
+    require OpenBSD::Pledge } };
 
 # Open these before possibly pledging
 my $input  = IO::File->new_tmpfile;
@@ -21,8 +22,8 @@ OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 ok my $filter = CLASS->new, "Created a new $CLASS instance";
 
 is $filter->_handle_report(
-'0.5|1576146008.006099|smtp-in|link-connect|7641df9771b4ed00|mail.openbsd.org|pass|199.185.178.25:33174|45.77.67.80:25'
-), {
+    '0.5|1576146008.006099|smtp-in|link-connect|7641df9771b4ed00|mail.openbsd.org|pass|199.185.178.25:33174|45.77.67.80:25'
+    ), {
     request   => 'report',
     version   => '0.5',
     timestamp => '1576146008.006099',
@@ -43,15 +44,16 @@ like dies { $filter->_handle_report('0.5|1576146008.006099|xxx|yyy') },
     qr{^\QUnsupported report 'xxx'|'yyy' at },
     "Unsupported report type throws exception";
 
-like dies { $filter->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
+like
+    dies { $filter->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
     qr{^\QUnsupported report 'smtp-in'|'unknown' at },
     "Unsupported report event throws exception";
 
 {
-	$_->seek(0,0), $_->truncate(0) for $input, $output;
-	$input->say("config|ready");
+    $_->seek( 0, 0 ), $_->truncate(0) for $input, $output;
+    $input->say("config|ready");
 
-	$input->print(<<'EOL');
+    $input->print(<<'EOL');
 report|0.6|1613343975.082146|smtp-in|link-connect|68d0e60751ca8d79|localhost|pass|[::1]:33310|[::1]:25
 report|0.6|1613343975.082230|smtp-in|filter-response|68d0e60751ca8d79|connected|proceed
 report|0.6|1613343975.082234|smtp-in|protocol-server|68d0e60751ca8d79|220 mail.example.test ESMTP OpenSMTPD
@@ -141,204 +143,227 @@ report|0.6|1613355867.062646|smtp-in|tx-reset|3647ceea74a815de|5e170a6f
 report|0.6|1613356167.075372|smtp-in|timeout|3647ceea74a815de
 EOL
 
-	$input->flush;
-	$input->seek(0,0);
+    $input->flush;
+    $input->seek( 0, 0 );
 
-	my $f = CLASS->new( input => $input, output => $output );
-	$f->ready;
+    my $f = CLASS->new( input => $input, output => $output );
+    $f->ready;
 
-	my $event = hash {
-		field request   => 'report';
-		field version   => E();
-		field timestamp => E();
-		field subsystem => E();
-		field event     => E();
-		field session   => E();
-		etc();
-	};
-	my @messages = (
-	    {   'mail'         => ['aahf'],
-	        'rcpt'         => ['afresh1'],
-	        'envelope-id'  => '5e170a6fd549b5d5',
-	        'message-id'   => '5e170a6f',
-	        'message-size' => '559',
-	        'result'       => 'ok'
-	    },
-	    {   'mail'         => ['andrew'],
-	        'rcpt'         => [ 'afresh1', 'root' ],
-	        'envelope-id'  => '71df546ee5247710',
-	        'message-id'   => '71df546e',
-	        'message-size' => '475',
-	        'result'       => 'ok'
-	    },
-	    {   'mail'         => ['aahf'],
-	        'rcpt'         => ['afresh1'],
-	        'envelope-id'  => '9e8fd41612d29cc8',
-	        'message-id'   => '9e8fd416',
-	        'message-size' => '545',
-	        'result'       => 'ok'
-	    }
-	);
+    my $event = hash {
+        field request   => 'report';
+        field version   => E();
+        field timestamp => E();
+        field subsystem => E();
+        field event     => E();
+        field session   => E();
+        etc();
+    };
+    my @messages = (
+        {   'mail'         => ['aahf'],
+            'rcpt'         => ['afresh1'],
+            'envelope-id'  => '5e170a6fd549b5d5',
+            'message-id'   => '5e170a6f',
+            'message-size' => '559',
+            'result'       => 'ok'
+        },
+        {   'mail'         => ['andrew'],
+            'rcpt'         => [ 'afresh1', 'root' ],
+            'envelope-id'  => '71df546ee5247710',
+            'message-id'   => '71df546e',
+            'message-size' => '475',
+            'result'       => 'ok'
+        },
+        {   'mail'         => ['aahf'],
+            'rcpt'         => ['afresh1'],
+            'envelope-id'  => '9e8fd41612d29cc8',
+            'message-id'   => '9e8fd416',
+            'message-size' => '545',
+            'result'       => 'ok'
+        }
+    );
 
-        my %expect = (
-            '3647ceea74a815de' => {
-                events   => [ ($event) x 28 ],
-                messages => [ $messages[0] ],
-                state => {
-                    'message'      => $messages[0],
-                    'version'      => '0.6',
-                    'timestamp'    => '1613356167.075372',
-                    'subsystem'    => 'smtp-in',
-                    'session'      => '3647ceea74a815de',
-                    'src'          => '[::1]:37403',
-                    'identity'     => 'mail.afresh1.test',
-                    'rdns'         => 'localhost',
-                    'fcrdns'       => 'pass',
-                    'dest'         => '[::1]:25',
-                    'hostname'     => 'mail.example.test',
-                    'method'       => 'HELO',
-                    'event'        => 'timeout',
-                    'response'     => '250 2.0.0 5e170a6f Message accepted for delivery',
-                    'command'      => '.',
-                    'phase'        => 'commit',
-                    'param'        => undef,
-                }
+    my %expect = (
+        '3647ceea74a815de' => {
+            events   => [ ($event) x 28 ],
+            messages => [ $messages[0] ],
+            state    => {
+                'message'   => $messages[0],
+                'version'   => '0.6',
+                'timestamp' => '1613356167.075372',
+                'subsystem' => 'smtp-in',
+                'session'   => '3647ceea74a815de',
+                'src'       => '[::1]:37403',
+                'identity'  => 'mail.afresh1.test',
+                'rdns'      => 'localhost',
+                'fcrdns'    => 'pass',
+                'dest'      => '[::1]:25',
+                'hostname'  => 'mail.example.test',
+                'method'    => 'HELO',
+                'event'     => 'timeout',
+                'response'  =>
+                    '250 2.0.0 5e170a6f Message accepted for delivery',
+                'command' => '.',
+                'phase'   => 'commit',
+                'param'   => undef,
+            }
 
-            },
-            '68d0e60751ca8d79' => {
-                events   => [ ($event) x 59 ],
-                messages => [ @messages[1,2] ],
-                state => {
-                    'message'      => $messages[2],
-                    'command'      => 'quit',
-                    'dest'         => '[::1]:25',
-                    'event'        => 'protocol-server',
-                    'fcrdns'       => 'pass',
-                    'hostname'     => 'mail.example.test',
-                    'identity'     => 'mail',
-                    'method'       => 'EHLO',
-                    'param'        => undef,
-                    'phase'        => 'quit',
-                    'rdns'         => 'localhost',
-                    'response'     => '221 2.0.0 Bye',
-                    'session'      => '68d0e60751ca8d79',
-                    'src'          => '[::1]:33310',
-                    'subsystem'    => 'smtp-in',
-                    'timestamp'    => '1613344069.173314',
-                    'version'      => '0.6'
-                }
-            },
-        );
+        },
+        '68d0e60751ca8d79' => {
+            events   => [ ($event) x 59 ],
+            messages => [ @messages[ 1, 2 ] ],
+            state    => {
+                'message'   => $messages[2],
+                'command'   => 'quit',
+                'dest'      => '[::1]:25',
+                'event'     => 'protocol-server',
+                'fcrdns'    => 'pass',
+                'hostname'  => 'mail.example.test',
+                'identity'  => 'mail',
+                'method'    => 'EHLO',
+                'param'     => undef,
+                'phase'     => 'quit',
+                'rdns'      => 'localhost',
+                'response'  => '221 2.0.0 Bye',
+                'session'   => '68d0e60751ca8d79',
+                'src'       => '[::1]:33310',
+                'subsystem' => 'smtp-in',
+                'timestamp' => '1613344069.173314',
+                'version'   => '0.6'
+            }
+        },
+    );
 
-	is $f->{_sessions}, \%expect, "Got the sessions we expected";
+    is $f->{_sessions}, \%expect, "Got the sessions we expected";
 
-	is $f->_dispatch('report|0.6|1613344069.173652|smtp-in|link-disconnect|68d0e60751ca8d79'), {
-	    request   => 'report',
-	    version   => '0.6',
-	    timestamp => '1613344069.173652',
-	    subsystem => 'smtp-in',
-	    event     => 'link-disconnect',
-	    session   => '68d0e60751ca8d79',
-	}, "Got back the report from the disconnect";
-	ok !$f->{_sessions}->{'68d0e60751ca8d79'}, "Removed the session that disconnected";
+    is $f->_dispatch(
+        'report|0.6|1613344069.173652|smtp-in|link-disconnect|68d0e60751ca8d79'
+    ), {
+        request   => 'report',
+        version   => '0.6',
+        timestamp => '1613344069.173652',
+        subsystem => 'smtp-in',
+        event     => 'link-disconnect',
+        session   => '68d0e60751ca8d79',
+    }, "Got back the report from the disconnect";
 
-	is $f->_dispatch('report|0.6|1613356167.075380|smtp-in|link-disconnect|3647ceea74a815de'), {
-	    request   => 'report',
-	    version   => '0.6',
-	    timestamp => '1613356167.075380',
-	    subsystem => 'smtp-in',
-	    event     => 'link-disconnect',
-	    session   => '3647ceea74a815de',
-	}, "Got the timeout event";
+    ok !$f->{_sessions}->{'68d0e60751ca8d79'},
+        "Removed the session that disconnected";
 
-	is $f->{_sessions}, {}, "No more sessions after they all disconnected";
+    is $f->_dispatch(
+        'report|0.6|1613356167.075380|smtp-in|link-disconnect|3647ceea74a815de'
+    ), {
+        request   => 'report',
+        version   => '0.6',
+        timestamp => '1613356167.075380',
+        subsystem => 'smtp-in',
+        event     => 'link-disconnect',
+        session   => '3647ceea74a815de',
+    }, "Got the timeout event";
+
+    is $f->{_sessions}, {}, "No more sessions after they all disconnected";
 }
 
 {
-	my @events;
-	my $cb = sub { push @events, dclone(\@_) };
-	my $f = CLASS->new(
-		on => { report => { 'smtp-in' => {
-			'link-connect'    => $cb,
-			'filter-response' => $cb,
-			'link-disconnect' => $cb,
-		} } },
-	);
+    my @events;
+    my $cb = sub { push @events, dclone( \@_ ) };
+    my $f  = CLASS->new(
+        on => {
+            report => {
+                'smtp-in' => {
+                    'link-connect'    => $cb,
+                    'filter-response' => $cb,
+                    'link-disconnect' => $cb,
+                }
+            }
+        },
+    );
 
-	$f->_dispatch($_) for (
-'report|0.6|1613354148.037118|smtp-in|link-connect|a5003f502d509539|localhost|pass|[::1]:13393|[::1]:25',
-'report|0.6|1613354148.037240|smtp-in|filter-response|a5003f502d509539|connected|proceed',
-'report|0.6|1613354148.037249|smtp-in|protocol-server|a5003f502d509539|220 trillian.home.hewus.com ESMTP OpenSMTPD',
-'report|0.6|1613354148.037302|smtp-in|link-greeting|a5003f502d509539|trillian.home.hewus.com',
-'report|0.6|1613354153.366420|smtp-in|protocol-client|a5003f502d509539|ehlo mail',
-'report|0.6|1613354153.366873|smtp-in|filter-response|a5003f502d509539|ehlo|proceed',
-'report|0.6|1613354153.366876|smtp-in|link-identify|a5003f502d509539|EHLO|mail',
-'report|0.6|1613354153.366896|smtp-in|protocol-server|a5003f502d509539|250-trillian.home.hewus.com Hello mail [::1], pleased to meet you',
-'report|0.6|1613354153.366901|smtp-in|protocol-server|a5003f502d509539|250-8BITMIME',
-'report|0.6|1613354153.366903|smtp-in|protocol-server|a5003f502d509539|250-ENHANCEDSTATUSCODES',
-'report|0.6|1613354153.366905|smtp-in|protocol-server|a5003f502d509539|250-SIZE 36700160',
-'report|0.6|1613354153.366907|smtp-in|protocol-server|a5003f502d509539|250-DSN',
-'report|0.6|1613354153.366909|smtp-in|protocol-server|a5003f502d509539|250 HELP',
-'report|0.6|1613354453.375358|smtp-in|timeout|a5003f502d509539',
-'report|0.6|1613354453.375366|smtp-in|link-disconnect|a5003f502d509539',
-	);
+    $f->_dispatch($_)
+        for (
+        'report|0.6|1613354148.037118|smtp-in|link-connect|a5003f502d509539|localhost|pass|[::1]:13393|[::1]:25',
+        'report|0.6|1613354148.037240|smtp-in|filter-response|a5003f502d509539|connected|proceed',
+        'report|0.6|1613354148.037249|smtp-in|protocol-server|a5003f502d509539|220 trillian.home.hewus.com ESMTP OpenSMTPD',
+        'report|0.6|1613354148.037302|smtp-in|link-greeting|a5003f502d509539|trillian.home.hewus.com',
+        'report|0.6|1613354153.366420|smtp-in|protocol-client|a5003f502d509539|ehlo mail',
+        'report|0.6|1613354153.366873|smtp-in|filter-response|a5003f502d509539|ehlo|proceed',
+        'report|0.6|1613354153.366876|smtp-in|link-identify|a5003f502d509539|EHLO|mail',
+        'report|0.6|1613354153.366896|smtp-in|protocol-server|a5003f502d509539|250-trillian.home.hewus.com Hello mail [::1], pleased to meet you',
+        'report|0.6|1613354153.366901|smtp-in|protocol-server|a5003f502d509539|250-8BITMIME',
+        'report|0.6|1613354153.366903|smtp-in|protocol-server|a5003f502d509539|250-ENHANCEDSTATUSCODES',
+        'report|0.6|1613354153.366905|smtp-in|protocol-server|a5003f502d509539|250-SIZE 36700160',
+        'report|0.6|1613354153.366907|smtp-in|protocol-server|a5003f502d509539|250-DSN',
+        'report|0.6|1613354153.366909|smtp-in|protocol-server|a5003f502d509539|250 HELP',
+        'report|0.6|1613354453.375358|smtp-in|timeout|a5003f502d509539',
+        'report|0.6|1613354453.375366|smtp-in|link-disconnect|a5003f502d509539',
+        );
 
-	my $event = hash {
-		field version   => E();
-		field timestamp => E();
-		field subsystem => E();
-		field event     => E();
-		field session   => E();
-		etc();
-	};
+    my $event = hash {
+        field version   => E();
+        field timestamp => E();
+        field subsystem => E();
+        field event     => E();
+        field session   => E();
+        etc();
+    };
 
-	my %state = (
-		'version'   => '0.6',
-		'timestamp' => '1613354148.037118',
-		'subsystem' => 'smtp-in',
-		'event'     => 'link-connect',
-		'session'   => 'a5003f502d509539',
+    my %state = (
+        'version'   => '0.6',
+        'timestamp' => '1613354148.037118',
+        'subsystem' => 'smtp-in',
+        'event'     => 'link-connect',
+        'session'   => 'a5003f502d509539',
 
-		'src'    => '[::1]:13393',
-		'dest'   => '[::1]:25',
-		'rdns'   => 'localhost',
-		'fcrdns' => 'pass',
-	);
+        'src'    => '[::1]:13393',
+        'dest'   => '[::1]:25',
+        'rdns'   => 'localhost',
+        'fcrdns' => 'pass',
+    );
 
-	is \@events, [
-		[ 'link-connect',
-		    { events => [ ( $event ) x  1 ], state => {%state} } ],
-		[ 'filter-response',
-		    { events => [ ( $event ) x  2 ], state => {%state,
-			'timestamp' => '1613354148.037240',
-			'event'     => 'filter-response',
-			'response'  => 'proceed',
-			'param'     => undef,
-			'phase'     => 'connected',
-		} } ],
-		[ 'filter-response',
-		    { events => [ ( $event ) x 6 ], state => {%state,
-			'timestamp' => '1613354153.366873',
-			'event'     => 'filter-response',
-			'response'  => 'proceed',
-			'param'     => undef,
-			'phase'     => 'ehlo',
-			'command'   => 'ehlo mail',
-			'hostname'  => 'trillian.home.hewus.com',
-		} } ],
-		[ 'link-disconnect',
-		    { events => [ ( $event ) x 15 ], state => {%state,
-			'timestamp' => '1613354453.375366',
-			'event'     => 'link-disconnect',
-			'response'  => '250 HELP',
-			'param'     => undef,
-			'phase'     => 'ehlo',
-			'method'    => 'EHLO',
-			'command'   => 'ehlo mail',
-			'identity'  => 'mail',
-			'hostname'  => 'trillian.home.hewus.com',
-		} } ],
-	], "Got the events we expected";
+    is \@events, [
+        [ 'link-connect', { events => [ ($event) x 1 ], state => {%state} } ],
+        [   'filter-response',
+            {   events => [ ($event) x 2 ],
+                state  => {
+                    %state,
+                    'timestamp' => '1613354148.037240',
+                    'event'     => 'filter-response',
+                    'response'  => 'proceed',
+                    'param'     => undef,
+                    'phase'     => 'connected',
+                }
+            }
+        ],
+        [   'filter-response',
+            {   events => [ ($event) x 6 ],
+                state  => {
+                    %state,
+                    'timestamp' => '1613354153.366873',
+                    'event'     => 'filter-response',
+                    'response'  => 'proceed',
+                    'param'     => undef,
+                    'phase'     => 'ehlo',
+                    'command'   => 'ehlo mail',
+                    'hostname'  => 'trillian.home.hewus.com',
+                }
+            }
+        ],
+        [   'link-disconnect',
+            {   events => [ ($event) x 15 ],
+                state  => {
+                    %state,
+                    'timestamp' => '1613354453.375366',
+                    'event'     => 'link-disconnect',
+                    'response'  => '250 HELP',
+                    'param'     => undef,
+                    'phase'     => 'ehlo',
+                    'method'    => 'EHLO',
+                    'command'   => 'ehlo mail',
+                    'identity'  => 'mail',
+                    'hostname'  => 'trillian.home.hewus.com',
+                }
+            }
+        ],
+    ], "Got the events we expected";
 }
 
 done_testing;

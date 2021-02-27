@@ -1,13 +1,13 @@
 use Test2::V0 -target => 'OpenSMTPd::Filter',
-	qw< ok is like
-	warning dies
-	hash field E etc
-	diag subtest done_testing >;
+    qw< ok is like
+       warning dies
+       hash field E etc
+       diag subtest done_testing >;
 
 use IO::File;
 
 my $has_pledge = do { local $@; eval { local $SIG{__DIE__};
-	require OpenBSD::Pledge } };
+    require OpenBSD::Pledge } };
 
 # Open these before possibly pledging
 my $input  = IO::File->new_tmpfile;
@@ -18,17 +18,20 @@ my $output = IO::File->new_tmpfile;
     require Test2::API::Breakage } };
 
 diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
+
 # for some reason "warning" requires rpath
 OpenBSD::Pledge::pledge('rpath') || die "Unable to pledge: $!" if $has_pledge;
 
 is CLASS->new(
-    output => $output,
+    output    => $output,
     _sessions => { abc => {} },
-    on     => { filter => { 'smtp-in' => {
-	connect => sub {'proceed'}
-    } } } )->_handle_filter(
-        '0.6|123|smtp-in|connect|abc|def|localhost|[::1]'
-    ), {
+    on        => {
+        filter => {
+            'smtp-in' => {
+                connect => sub {'proceed'}
+            }
+        }
+})->_handle_filter('0.6|123|smtp-in|connect|abc|def|localhost|[::1]'), {
     version        => '0.6',
     timestamp      => '123',
     subsystem      => 'smtp-in',
@@ -37,12 +40,11 @@ is CLASS->new(
     'opaque-token' => 'def',
 }, "Able to handle_filter for a link-connect";
 
-$output->seek(0,0);
+$output->seek( 0, 0 );
 is $output->getline,
     "filter-result|abc|def|proceed\n",
     "Handled the message with our expected result";
-$output->seek(0,0);
-
+$output->seek( 0, 0 );
 
 {
     my $filter = CLASS->new;
@@ -85,11 +87,15 @@ $output->seek(0,0);
     my $filter = CLASS->new(
         output    => $output,
         _sessions => { aaa => {}, bbb => {}, ccc => {} },
-        on        => { filter => { 'smtp-in' => {
-            helo => sub { push @params, \@_; 'incorrect' },
-            ehlo => sub { push @params, \@_; 'junk', 'do not like' },
-            data => sub { push @params, \@_; 'rewrite' },
-        } } }
+        on        => {
+            filter => {
+                'smtp-in' => {
+                    helo => sub { push @params, \@_; 'incorrect' },
+                    ehlo => sub { push @params, \@_; 'junk', 'do not like' },
+                    data => sub { push @params, \@_; 'rewrite' },
+                }
+            }
+        }
     );
 
     like dies { $filter->_handle_filter('0.6|123|smtp-in|auth') },
@@ -106,25 +112,32 @@ $output->seek(0,0);
         qr/^\QUnknown return from filter 'smtp-in'|'helo': incorrect at /,
         "Warned that the filter returned an invalid response";
 
-    like \@params, [ [ helo => { events => [
-            {   subsystem => 'smtp-in',
-                phase     => 'helo',
-                identity  => 'mail',
+    like \@params, [
+        [   helo => {
+                events => [
+                    {   subsystem => 'smtp-in',
+                        phase     => 'helo',
+                        identity  => 'mail',
+                    }
+                ]
             }
-    ] } ] ], "Passed expected params to filter";
+        ]
+    ], "Passed expected params to filter";
     @params = ();
 
-    is $filter->{_sessions}->{aaa}, { events => [
-        {   'request'      => 'filter',
-            'version'      => '0.6',
-            'timestamp'    => '123',
-            'subsystem'    => 'smtp-in',
-            'session'      => 'aaa',
-            'opaque-token' => 'def',
-            'phase'        => 'helo',
-            'identity'     => 'mail',
-        }
-    ] }, "First session filled as expected";
+    is $filter->{_sessions}->{aaa}, {
+        events => [
+            {   'request'      => 'filter',
+                'version'      => '0.6',
+                'timestamp'    => '123',
+                'subsystem'    => 'smtp-in',
+                'session'      => 'aaa',
+                'opaque-token' => 'def',
+                'phase'        => 'helo',
+                'identity'     => 'mail',
+            }
+        ]
+    }, "First session filled as expected";
 
     like warning {
         $filter->_handle_filter('0.6|123|smtp-in|ehlo|bbb|def|mail')
@@ -132,25 +145,32 @@ $output->seek(0,0);
         qr/^\QIncorrect params from filter 'smtp-in'|'ehlo', expected 'decision' got 'junk' 'do not like' at /,
         "Warned that the filter returned unexpected params";
 
-    like \@params, [ [ ehlo => { events => [
-            {   subsystem => 'smtp-in',
-                phase     => 'ehlo',
-                identity  => 'mail',
+    like \@params, [
+        [   ehlo => {
+                events => [
+                    {   subsystem => 'smtp-in',
+                        phase     => 'ehlo',
+                        identity  => 'mail',
+                    }
+                ]
             }
-    ] } ] ], "Passed expected params to filter";
+        ]
+    ], "Passed expected params to filter";
     @params = ();
 
-    is $filter->{_sessions}->{bbb}, { events => [
-        {   'request'      => 'filter',
-            'version'      => '0.6',
-            'timestamp'    => '123',
-            'subsystem'    => 'smtp-in',
-            'session'      => 'bbb',
-            'opaque-token' => 'def',
-            'phase'        => 'ehlo',
-            'identity'     => 'mail',
-        }
-    ] }, "Second session filled as expected";
+    is $filter->{_sessions}->{bbb}, {
+        events => [
+            {   'request'      => 'filter',
+                'version'      => '0.6',
+                'timestamp'    => '123',
+                'subsystem'    => 'smtp-in',
+                'session'      => 'bbb',
+                'opaque-token' => 'def',
+                'phase'        => 'ehlo',
+                'identity'     => 'mail',
+            }
+        ]
+    }, "Second session filled as expected";
 
     like warning {
         $filter->_handle_filter('0.6|123|smtp-in|data|ccc|def')
@@ -158,23 +178,30 @@ $output->seek(0,0);
         qr/^\QIncorrect params from filter 'smtp-in'|'data', expected 'decision' 'parameter' got 'rewrite' at /,
         "Warned that the filter returned unexpected params";
 
-    like \@params, [ [ data => { events => [
-        {   subsystem => 'smtp-in',
-            phase     => 'data',
-        }
-    ] } ] ], "Passed expected params to filter";
+    like \@params, [
+        [   data => {
+                events => [
+                    {   subsystem => 'smtp-in',
+                        phase     => 'data',
+                    }
+                ]
+            }
+        ]
+    ], "Passed expected params to filter";
     @params = ();
 
-    is $filter->{_sessions}->{ccc}, { events => [
-        {   'request'      => 'filter',
-            'version'      => '0.6',
-            'timestamp'    => '123',
-            'subsystem'    => 'smtp-in',
-            'session'      => 'ccc',
-            'opaque-token' => 'def',
-            'phase'        => 'data',
-        }
-    ] }, "Third session filled as expected";
+    is $filter->{_sessions}->{ccc}, {
+        events => [
+            {   'request'      => 'filter',
+                'version'      => '0.6',
+                'timestamp'    => '123',
+                'subsystem'    => 'smtp-in',
+                'session'      => 'ccc',
+                'opaque-token' => 'def',
+                'phase'        => 'data',
+            }
+        ]
+    }, "Third session filled as expected";
 }
 
 subtest "fill in error on response" => sub {
@@ -195,56 +222,68 @@ subtest "fill in error on response" => sub {
         $filter->_handle_filter('0.6|123|smtp-in|mail-from|abc|def|andrew')
     }, undef, "No warnings for missing filled-in prarms";
 
-    like \@params, [ [ 'mail-from' => { events => [
-            {   subsystem => 'smtp-in',
-                phase     => 'mail-from',
-                address   => 'andrew',
+    like \@params, [
+        [   'mail-from' => {
+                events => [
+                    {   subsystem => 'smtp-in',
+                        phase     => 'mail-from',
+                        address   => 'andrew',
+                    }
+                ]
             }
-    ] } ] ], "Passed expected params to filter";
+        ]
+    ], "Passed expected params to filter";
     @params = ();
 
     like warning {
         $filter->_handle_filter('0.6|123|smtp-in|rcpt-to|abc|def|afresh1')
     }, undef, "No warnings for missing filled-in prarms";
 
-    like \@params, [ [ 'rcpt-to' => { events => [
-            {   subsystem => 'smtp-in',
-                phase     => 'mail-from',
-                address   => 'andrew',
-            },
-            {   subsystem => 'smtp-in',
-                phase     => 'rcpt-to',
-                address   => 'afresh1',
+    like \@params, [
+        [   'rcpt-to' => {
+                events => [
+                    {   subsystem => 'smtp-in',
+                        phase     => 'mail-from',
+                        address   => 'andrew',
+                    },
+                    {   subsystem => 'smtp-in',
+                        phase     => 'rcpt-to',
+                        address   => 'afresh1',
+                    }
+                ]
             }
-    ] } ] ], "Passed expected params to filter";
+        ]
+    ], "Passed expected params to filter";
     @params = ();
 
-    is $filter->{_sessions}->{abc}, { events => [
-        {   'request'      => 'filter',
-            'version'      => '0.6',
-            'timestamp'    => '123',
-            'subsystem'    => 'smtp-in',
-            'session'      => 'abc',
-            'opaque-token' => 'def',
-            'phase'        => 'mail-from',
-            'address'      => 'andrew',
-        },
-        {   'request'      => 'filter',
-            'version'      => '0.6',
-            'timestamp'    => '123',
-            'subsystem'    => 'smtp-in',
-            'session'      => 'abc',
-            'opaque-token' => 'def',
-            'phase'        => 'rcpt-to',
-            'address'      => 'afresh1',
-        }
-    ] }, "Second session filled as expected";
+    is $filter->{_sessions}->{abc}, {
+        events => [
+            {   'request'      => 'filter',
+                'version'      => '0.6',
+                'timestamp'    => '123',
+                'subsystem'    => 'smtp-in',
+                'session'      => 'abc',
+                'opaque-token' => 'def',
+                'phase'        => 'mail-from',
+                'address'      => 'andrew',
+            },
+            {   'request'      => 'filter',
+                'version'      => '0.6',
+                'timestamp'    => '123',
+                'subsystem'    => 'smtp-in',
+                'session'      => 'abc',
+                'opaque-token' => 'def',
+                'phase'        => 'rcpt-to',
+                'address'      => 'afresh1',
+            }
+        ]
+    }, "Second session filled as expected";
 
     $output->seek( 0, 0 );
-    is [ map { chomp; $_ } $output->getlines ],
-        [ 'filter-result|abc|def|reject|550 Nope',
-          'filter-result|abc|def|disconnect|550 Nope',
-        ], "Wrote the filter respose we expected";
+    is [ map { chomp; $_ } $output->getlines ], [
+        'filter-result|abc|def|reject|550 Nope',
+        'filter-result|abc|def|disconnect|550 Nope',
+    ], "Wrote the filter respose we expected";
 };
 
 my $data_lines = <<'EOL';
@@ -261,10 +300,10 @@ filter|0.6|010|smtp-in|data-line|abc|def|.
 EOL
 
 my @data_lines = (
-    'From: Andrew', 'To: AFresh1', '',
-    'Hello!', '', '...', '..', '',
-    'There!',
-     '.',
+    'From: Andrew', 'To: AFresh1',
+    '',
+    'Hello!', '', '...', '..', '', 'There!',
+    '.',
 );
 
 {
@@ -275,20 +314,23 @@ my @data_lines = (
     my $f     = CLASS->new(
         output    => $output,
         _sessions => { abc => { messages => [ {}, {} ] } },
-        on        => { filter => { 'smtp-in' => {
-           'data-line' => sub {
-               push @lines, \@_; my $l = $_[1];
-               $l && $l eq '.' ? () : $l ? "x $l" : $l;
-           },
-           'data-lines' => sub {
-               push @lines, \@_;
-               map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
-           },
-       } } }
+        on        => {
+            filter => {
+                'smtp-in' => {
+                    'data-line' => sub {
+                        push @lines, \@_; my $l = $_[1];
+                        $l && $l eq '.' ? () : $l ? "x $l" : $l;
+                    },
+                    'data-lines' => sub {
+                        push @lines, \@_;
+                        map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
+                    },
+                }
+            }
+        }
     );
 
-
-    $f->_dispatch($_) for ( split /\n/, $data_lines )[3,8,9];
+    $f->_dispatch($_) for ( split /\n/, $data_lines )[ 3, 8, 9 ];
 
     my %event = (
         'version'      => '0.6',
@@ -306,8 +348,12 @@ my @data_lines = (
                 { %event, 'timestamp' => '009', 'line' => 'There!' },
                 { %event, 'timestamp' => '010', 'line' => '.' },
             ],
-            messages =>
-                [ {}, { 'data-line' => [@data_lines[3,8,9]], 'sent-dot' => 1 } ],
+            messages => [
+                {},
+                {   'data-line' => [ @data_lines[ 3, 8, 9 ] ],
+                    'sent-dot'  => 1
+                }
+            ],
         }
     );
 
@@ -320,25 +366,23 @@ my @data_lines = (
     };
 
     is \@lines, [
-            ( map { [ 'data-line'  => $_, $session ] } @data_lines[3,8,9] ),
-            [ 'data-lines' => [ @data_lines[3,8,9] ], $session ],
-        ],
-        "Got the filter params we expected";
+        ( map { [ 'data-line' => $_, $session ] } @data_lines[ 3, 8, 9 ] ),
+        [ 'data-lines' => [ @data_lines[ 3, 8, 9 ] ], $session ],
+    ], "Got the filter params we expected";
 
     $output->seek( 0, 0 );
-    is [ map { chomp; $_ } $output->getlines ],
-        [ map {"filter-dataline|abc|def|$_"}
-        ( map { $_ ? "x $_" : $_ } @data_lines[3,8]   ),
-        ( map { $_ ? "y $_" : $_ } @data_lines[3,8] ),
+    is [ map { chomp; $_ } $output->getlines ], [
+        map {"filter-dataline|abc|def|$_"}
+            ( map { $_ ? "x $_" : $_ } @data_lines[ 3, 8 ] ),
+        ( map { $_ ? "y $_" : $_ } @data_lines[ 3, 8 ] ),
         '.',
-        ],
-        "Wrote the filter respose we expected";
+    ], "Wrote the filter respose we expected";
 }
 
 subtest 'filter data-line' => sub {
     $_->seek( 0, 0 ), $_->truncate(0) for $input, $output;
 
-    $input->print("config|ready\n", $data_lines);
+    $input->print( "config|ready\n", $data_lines );
     $input->flush;
     $input->seek( 0, 0 );
 
@@ -348,11 +392,11 @@ subtest 'filter data-line' => sub {
         output    => $output,
         _sessions => { abc => { messages => [ {}, {} ] } },
         on        => { filter => { 'smtp-in' => {
-           'data-line' => sub {
-               push @lines, \@_; my $l = $_[1];
-               $l && $l ne '.' ? "x $l" : $l;
-           }
-       } } }
+            'data-line' => sub {
+                push @lines, \@_; my $l = $_[1];
+                $l && $l ne '.' ? "x $l" : $l;
+            }
+        } } }
     );
 
     $f->ready;
@@ -397,10 +441,10 @@ subtest 'filter data-line' => sub {
         "Got the filter params we expected";
 
     $output->seek( 0, 0 );
-    is [  map { chomp; $_ } grep { /^filter/ } $output->getlines ],
-        [ map {"filter-dataline|abc|def|$_"}
-        map { $_ && $_ ne '.' ? "x $_" : $_ } @data_lines ],
-        "Wrote the filter respose we expected";
+    is [ map { chomp; $_ } grep {/^filter/} $output->getlines ], [
+        map {"filter-dataline|abc|def|$_"}
+        map { $_ && $_ ne '.' ? "x $_" : $_ } @data_lines
+    ], "Wrote the filter respose we expected";
 };
 
 subtest 'filter data-lines' => sub {
@@ -412,11 +456,11 @@ subtest 'filter data-lines' => sub {
         output    => $output,
         _sessions => { abc => { messages => [ {}, {} ] } },
         on        => { filter => { 'smtp-in' => {
-           'data-lines' => sub {
-               push @lines, \@_;
-               map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
-           }
-       } } }
+            'data-lines' => sub {
+                push @lines, \@_;
+                map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
+            }
+        } } }
     );
 
     $f->_dispatch($_) for split /\n/, $data_lines;
@@ -457,14 +501,14 @@ subtest 'filter data-lines' => sub {
         etc();
     };
 
-    is \@lines, [ [ 'data-lines' => \@data_lines , $session ] ],
+    is \@lines, [ [ 'data-lines' => \@data_lines, $session ] ],
         "Got the filter params we expected";
 
     $output->seek( 0, 0 );
-    is [ map { chomp; $_ } $output->getlines ],
-        [ map {"filter-dataline|abc|def|$_"}
-        map { $_ && $_ ne '.' ? "y $_" : $_ } @data_lines ],
-        "Wrote the filter respose we expected";
+    is [ map { chomp; $_ } $output->getlines ], [
+        map {"filter-dataline|abc|def|$_"}
+        map { $_ && $_ ne '.' ? "y $_" : $_ } @data_lines
+    ], "Wrote the filter respose we expected";
 };
 
 done_testing;

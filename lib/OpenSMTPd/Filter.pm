@@ -228,8 +228,12 @@ sub _handle_report {
 
         my $message = $session->{messages}->[-1];
 
-        if ( $phase eq 'rcpt' or $phase eq 'mail' ) {
-            push @{ $message->{$phase} }, $params{address};
+        if ( $phase eq 'mail' ) {
+            $message->{'mail-from'} = $params{address};
+            $message->{result} = $params{result};
+        }
+        elsif ( $phase eq 'rcpt') {
+            push @{ $message->{'rcpt-to'} }, $params{address};
             $message->{result} = $params{result};
         }
         else {

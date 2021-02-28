@@ -159,22 +159,22 @@ EOL
         etc();
     };
     my @messages = (
-        {   'mail'         => ['aahf'],
-            'rcpt'         => ['afresh1'],
+        {   'mail-from'    => 'aahf',
+            'rcpt-to'      => ['afresh1'],
             'envelope-id'  => '5e170a6fd549b5d5',
             'message-id'   => '5e170a6f',
             'message-size' => '559',
             'result'       => 'ok'
         },
-        {   'mail'         => ['andrew'],
-            'rcpt'         => [ 'afresh1', 'root' ],
+        {   'mail-from'    => 'andrew',
+            'rcpt-to'      => [ 'afresh1', 'root' ],
             'envelope-id'  => '71df546ee5247710',
             'message-id'   => '71df546e',
             'message-size' => '475',
             'result'       => 'ok'
         },
-        {   'mail'         => ['aahf'],
-            'rcpt'         => ['afresh1'],
+        {   'mail-from'    => 'aahf',
+            'rcpt-to'      => ['afresh1'],
             'envelope-id'  => '9e8fd41612d29cc8',
             'message-id'   => '9e8fd416',
             'message-size' => '545',

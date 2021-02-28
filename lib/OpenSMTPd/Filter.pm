@@ -322,7 +322,7 @@ sub _handle_filter_data_line {
     if ( my $cb
         = $self->_cb_for( filter => @{$filter}{qw< subsystem phase >} ) )
     {
-        @lines = $cb->( $filter->{phase}, $line, $session );
+        @lines = $cb->( $filter->{phase}, $session, $line );
     }
 
     my $message = $session->{messages}->[-1];
@@ -331,7 +331,7 @@ sub _handle_filter_data_line {
     if ( $line eq '.' ) {
         my $cb
             = $self->_cb_for( filter => $filter->{subsystem}, 'data-lines' );
-        push @lines, $cb->( 'data-lines', $message->{'data-line'}, $session )
+        push @lines, $cb->( 'data-lines', $session, $message->{'data-line'} )
             if $cb;
 
         # make sure we end the message;

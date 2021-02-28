@@ -318,12 +318,12 @@ my @data_lines = (
             filter => {
                 'smtp-in' => {
                     'data-line' => sub {
-                        push @lines, \@_; my $l = $_[1];
+                        push @lines, \@_; my $l = $_[-1];
                         $l && $l eq '.' ? () : $l ? "x $l" : $l;
                     },
                     'data-lines' => sub {
                         push @lines, \@_;
-                        map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
+                        map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[-1] };
                     },
                 }
             }
@@ -366,8 +366,8 @@ my @data_lines = (
     };
 
     is \@lines, [
-        ( map { [ 'data-line' => $_, $session ] } @data_lines[ 3, 8, 9 ] ),
-        [ 'data-lines' => [ @data_lines[ 3, 8, 9 ] ], $session ],
+        ( map { [ 'data-line' => $session, $_ ] } @data_lines[ 3, 8, 9 ] ),
+        [ 'data-lines' => $session, [ @data_lines[ 3, 8, 9 ] ]],
     ], "Got the filter params we expected";
 
     $output->seek( 0, 0 );
@@ -393,7 +393,7 @@ subtest 'filter data-line' => sub {
         _sessions => { abc => { messages => [ {}, {} ] } },
         on        => { filter => { 'smtp-in' => {
             'data-line' => sub {
-                push @lines, \@_; my $l = $_[1];
+                push @lines, \@_; my $l = $_[-1];
                 $l && $l ne '.' ? "x $l" : $l;
             }
         } } }
@@ -437,7 +437,7 @@ subtest 'filter data-line' => sub {
         etc();
     };
 
-    is \@lines, [ map { [ 'data-line' => $_, $session ] } @data_lines ],
+    is \@lines, [ map { [ 'data-line' => $session, $_ ] } @data_lines ],
         "Got the filter params we expected";
 
     $output->seek( 0, 0 );
@@ -458,7 +458,7 @@ subtest 'filter data-lines' => sub {
         on        => { filter => { 'smtp-in' => {
             'data-lines' => sub {
                 push @lines, \@_;
-                map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[1] };
+                map { $_ && $_ ne '.' ? "y $_" : $_ } @{ $_[-1] };
             }
         } } }
     );
@@ -501,7 +501,7 @@ subtest 'filter data-lines' => sub {
         etc();
     };
 
-    is \@lines, [ [ 'data-lines' => \@data_lines, $session ] ],
+    is \@lines, [ [ 'data-lines' => $session, \@data_lines ] ],
         "Got the filter params we expected";
 
     $output->seek( 0, 0 );

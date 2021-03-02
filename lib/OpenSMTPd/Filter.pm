@@ -689,8 +689,6 @@ Events for the subsystem below may include additional fields.
 
 =back
 
-=over
-
 =item protocol-client
 
 =over
@@ -732,8 +730,6 @@ Events for the subsystem below may include additional fields.
 =back
 
 =item timeout
-
-=back
 
 =back
 
@@ -835,8 +831,7 @@ they also recieve the current C<data-line> or all lines recieved.
 They should also return a list of L</dataline> responses instead of the
 normal decision response.
 
-All filter events have these fields, while individual events 
-may have
+All filter events have these fields:
 
 =over
 

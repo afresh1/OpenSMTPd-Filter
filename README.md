@@ -252,20 +252,19 @@ Events for the subsystem below may include additional fields.
     - link-auth
         - username
         - result
-
-        - protocol-client
-            - command
-        - protocol-server
-            - response
-        - filter-report
-            - filter-kind
-            - name
-            - message
-        - filter-response
-            - phase
-            - response
-            - param
-        - timeout
+    - protocol-client
+        - command
+    - protocol-server
+        - response
+    - filter-report
+        - filter-kind
+        - name
+        - message
+    - filter-response
+        - phase
+        - response
+        - param
+    - timeout
 
 ## MESSAGE REPORT EVENTS
 
@@ -321,8 +320,7 @@ they also recieve the current `data-line` or all lines recieved.
 They should also return a list of ["dataline"](#dataline) responses instead of the
 normal decision response.
 
-All filter events have these fields, while individual events 
-may have
+All filter events have these fields:
 
 - version
 - timestamp

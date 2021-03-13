@@ -140,16 +140,16 @@ sub ready {
     my @reports = map {"report|smtp-in|$_"}
         sort keys %{ $report_events{'smtp-in'} };
 
-    my %filters;
+    my @filters;
     for my $subsystem ( sort keys %{ $self->{on}->{filter} } ) {
-        for ( keys %{ $self->{on}->{filter}->{$subsystem} } ) {
+        for ( sort keys %{ $self->{on}->{filter}->{$subsystem} } ) {
             my $v     = $filter_events{$subsystem}{$_};
             my $phase = ref $v eq 'CODE' ? $v->($_) : $_;
-            $filters{"filter|$subsystem|$phase"} = 1;
+            push @filters, "filter|$subsystem|$phase";
         }
     }
 
-    for ( @reports, sort( keys %filters ), 'ready' ) {
+    for ( @reports, @filters, 'ready' ) {
         STDERR->say("> register|$_") if $self->{debug};
         $self->{output}->say("register|$_");
     }

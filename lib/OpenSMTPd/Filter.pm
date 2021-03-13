@@ -154,6 +154,8 @@ sub ready {
         $self->{output}->say("register|$_");
     }
 
+    $self->{input}->blocking(1);
+
     while ( defined( my $line = $self->{input}->getline ) ) {
         STDERR->print("< $line") if $self->{debug};
         chomp $line;

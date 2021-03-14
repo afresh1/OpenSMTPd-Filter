@@ -8,7 +8,7 @@ use OpenBSD::Unveil;
 use OpenBSD::Pledge;
 use Mail::SPF;
 
-# Preload modules for pledge(1)
+# Preload modules for pledge(2)
 use Net::DNS;
 require Mail::SPF::v1::Record;
 require Mail::SPF::v2::Record;

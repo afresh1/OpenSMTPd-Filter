@@ -16,7 +16,7 @@ my $whiteexp = 864 * 60 * 60;
 tie my %greylist, 'DB_File', '/var/db/greylist.db'
     or die "Unable to tie /var/db/greylist.db: $!";
 
-# To see modules pledge(1) blocks loading
+# To see modules pledge(2) blocks loading
 unshift @INC, sub { warn "Attempted to load $_[1]"; return };
 
 pledge(qw<>) || die $!;

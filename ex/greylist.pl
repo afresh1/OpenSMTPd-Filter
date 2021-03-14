@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use v5.30;
+use v5.16;
 use warnings;
 
 use OpenSMTPd::Filter;
@@ -15,6 +15,9 @@ my $whiteexp = 864 * 60 * 60;
 
 tie my %greylist, 'DB_File', '/var/db/greylist.db'
     or die "Unable to tie /var/db/greylist.db: $!";
+
+# To see modules pledge(1) blocks loading
+unshift @INC, sub { warn "Attempted to load $_[1]"; return };
 
 pledge(qw<>) || die $!;
 

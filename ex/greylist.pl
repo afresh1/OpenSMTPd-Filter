@@ -9,9 +9,9 @@ use DB_File;
 
 my $debug = 0;
 
-my $passtime = 25 * 60;
-my $greyexp  = 4 * 60 * 60;
-my $whiteexp = 864 * 60 * 60;
+my $passtime = 60 * 25;
+my $greyexp  = 60 * 60 * 4;
+my $whiteexp = 60 * 60 * 864;
 
 tie my %greylist, 'DB_File', '/var/db/greylist.db'
     or die "Unable to tie /var/db/greylist.db: $!";

@@ -105,6 +105,13 @@ sub new {
         [ "event type", "event subsystem", "event" ]
     );
 
+    # Only save data-lines if we're using the helper to process them
+    $params{_save_data_lines}
+       = $params{on}
+      && $params{on}{filter}
+      && $params{on}{filter}{'smtp-in'}
+      && $params{on}{filter}{'smtp-in'}{'data-lines'};
+
     my $self = bless \%params, $class;
     return $self->_init;
 }
@@ -332,7 +339,7 @@ sub _handle_filter_data_line {
     }
 
     my $message = $session->{messages}->[-1];
-    push @{ $message->{'data-line'} }, $line;
+    push @{ $message->{'data-line'} }, $line if $self->{_save_data_lines};
 
     if ( $line eq '.' ) {
         my $cb
@@ -598,7 +605,8 @@ The L</tx-from> and L</tx-rcpt> events are handled specially and
 go into the C<mail-from>, C<rcpt-to>, and C<result> fields.
 The C<rcpt-to> ends up in an arrayref as the message can be destined
 for multiple recipients.
-The C<data-line> field is also an arrayref of each line that has been
+If a L</data-lines> filter exists,
+the C<data-line> field is also an arrayref of each line that has been
 recieved so far, with the C<CR> and C<LF> removed.
 The C<sent-dot> field is a boolen indicating whether this message
 has sent the C<.> indicating it is complete.
@@ -1097,11 +1105,12 @@ This is not a result response.
 
 =head1 BUGS AND LIMITATIONS
 
-The received L</data-line> are stored in a list in memory,
+The received L</data-line> are stored in a list in memory
+if a L</data-lines> filter exists,
 which could easily be very large if the message is sizable.
 These should instead be stored in a temporary file.
 
-There is currenrtly no way to stop listening for specific report events,
+There is currently no way to stop listening for specific report events,
 this module should provide a way to specify which events it should
 listen for and gather state from.
 
@@ -1114,3 +1123,5 @@ Perl 5.16 or higher.
 L<smtpd-filters(7)|https://github.com/openbsd/src/blob/master/usr.sbin/smtpd/smtpd-filters.7>
 
 L<OpenBSD::Pledge|http://man.openbsd.org/OpenBSD::Pledge>
+
+L<OpenBSD::Unveil|http://man.openbsd.org/OpenBSD::Unveil>

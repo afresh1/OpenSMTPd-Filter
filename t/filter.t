@@ -425,7 +425,7 @@ subtest 'filter data-line' => sub {
                 { %event, 'timestamp' => '010', 'line' => '.' },
             ],
             messages =>
-                [ {}, { 'data-line' => [@data_lines], 'sent-dot' => 1 } ],
+                [ {}, { 'sent-dot' => 1 } ],
         }
     );
 

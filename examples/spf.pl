@@ -44,13 +44,21 @@ OpenSMTPd::Filter->new(
 sub verify_spf {
     my ( $phase, $s ) = @_;
 
-    my $result = $spf_server->process( Mail::SPF::Request->new(
-        versions      => [ 1, 2 ],
-        scope         => 'mfrom',
-        identity      => $s->{events}->[-1]->{address},
-        ip_address    => $s->{state}->{src} =~ s/:\d+$//r, # remove port
-        helo_identity => $s->{state}->{identity},
-    ) );
+    my %params = (
+        versions   => [ 1, 2 ],
+        scope      => 'helo',
+        ip_address => $s->{state}->{src} =~ s/:\d+$//r, # remove port
+        identity   => $s->{state}->{identity},
+    );
+
+    if ( my $address = $s->{events}->[-1]->{address} ) {
+        $params{scope}         = 'mfrom';
+        $params{helo_identity} = $params{identity};
+        $params{identity}      = $address;
+    }
+
+    my $result = $spf_server->process(
+        Mail::SPF::Request->new( %params ) );
 
     $s->{spf_header} = $result->received_spf_header;
     STDERR->say( $s->{spf_header} );

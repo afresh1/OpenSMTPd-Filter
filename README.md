@@ -4,7 +4,7 @@ OpenSMTPd::Filter - Easier filters for OpenSMTPd in perl
 
 # VERSION
 
-version v0.0.1
+version v0.0.2
 
 # SYNOPSIS
 
@@ -211,7 +211,8 @@ cause issues.
     go into the `mail-from`, `rcpt-to`, and `result` fields.
     The `rcpt-to` ends up in an arrayref as the message can be destined
     for multiple recipients.
-    The `data-line` field is also an arrayref of each line that has been
+    If a ["data-lines"](#data-lines) filter exists,
+    the `data-line` field is also an arrayref of each line that has been
     recieved so far, with the `CR` and `LF` removed.
     The `sent-dot` field is a boolen indicating whether this message
     has sent the `.` indicating it is complete.
@@ -487,11 +488,12 @@ will be done with the message.
 
 # BUGS AND LIMITATIONS
 
-The received ["data-line"](#data-line) are stored in a list in memory,
+The received ["data-line"](#data-line) are stored in a list in memory
+if a ["data-lines"](#data-lines) filter exists,
 which could easily be very large if the message is sizable.
 These should instead be stored in a temporary file.
 
-There is currenrtly no way to stop listening for specific report events,
+There is currently no way to stop listening for specific report events,
 this module should provide a way to specify which events it should
 listen for and gather state from.
 
@@ -504,6 +506,8 @@ Perl 5.16 or higher.
 [smtpd-filters(7)](https://github.com/openbsd/src/blob/master/usr.sbin/smtpd/smtpd-filters.7)
 
 [OpenBSD::Pledge](http://man.openbsd.org/OpenBSD::Pledge)
+
+[OpenBSD::Unveil](http://man.openbsd.org/OpenBSD::Unveil)
 
 # AUTHOR
 

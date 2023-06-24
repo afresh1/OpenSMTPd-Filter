@@ -36,6 +36,32 @@ is CLASS->new->_handle_report(
     dest      => '45.77.67.80:25',
 }, "Able to handle_report for a link-connect";
 
+is CLASS->new->_handle_report(
+    '0.6|1576146008.006099|smtp-in|link-auth|7641df9771b4ed00|foobar|pass'
+), {
+    event     => 'link-auth',
+    request   => 'report',
+    result    => 'pass',
+    session   => '7641df9771b4ed00',
+    subsystem => 'smtp-in',
+    timestamp => '1576146008.006099',
+    username  => 'foobar',
+    version   => '0.6',
+}, 'Able to handle_report for a 0.6 link-auth';
+
+is CLASS->new->_handle_report(
+    '0.7|1576146008.006099|smtp-in|link-auth|7641df9771b4ed00|pass|foo|bar'
+), {
+    event     => 'link-auth',
+    request   => 'report',
+    result    => 'pass',
+    session   => '7641df9771b4ed00',
+    subsystem => 'smtp-in',
+    timestamp => '1576146008.006099',
+    username  => 'foo|bar',
+    version   => '0.7',
+}, 'Able to handle_report for a 0.7 link-auth';
+
 like dies { CLASS->new->_handle_report('0.5|1576146008.006099') },
     qr{^\QUnsupported report undef|undef at },
     "Undef report event throws exception";

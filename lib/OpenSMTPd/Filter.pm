@@ -24,7 +24,12 @@ my %report_events = (
         'link-identify'   => [qw< method identity >],
         'link-tls'        => [qw< tls-string >],
         'link-disconnect' => [qw< >],
-        'link-auth'       => [qw< username result >],
+        'link-auth'       => sub {
+            my ($f, $type, $params) = @_;
+            return $params->{version} < 0.7
+                ? [qw< username result >]
+                : [qw< result username >];
+        },
         'tx-reset'        => [qw< message-id >],
         'tx-begin'        => [qw< message-id >],
         'tx-mail'         => [qw< message-id result address >],
@@ -700,9 +705,9 @@ Events for the subsystem below may include additional fields.
 
 =over
 
-=item username
-
 =item result
+
+=item username
 
 =back
 

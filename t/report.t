@@ -19,9 +19,9 @@ my $output = IO::File->new_tmpfile;
 diag "Testing $CLASS on perl $^V" . ( $has_pledge ? " with pledge" : "" );
 OpenBSD::Pledge::pledge() || die "Unable to pledge: $!" if $has_pledge;
 
-ok my $filter = CLASS->new, "Created a new $CLASS instance";
+ok CLASS->new, "Created a new $CLASS instance";
 
-is $filter->_handle_report(
+is CLASS->new->_handle_report(
     '0.5|1576146008.006099|smtp-in|link-connect|7641df9771b4ed00|mail.openbsd.org|pass|199.185.178.25:33174|45.77.67.80:25'
     ), {
     request   => 'report',
@@ -36,16 +36,16 @@ is $filter->_handle_report(
     dest      => '45.77.67.80:25',
 }, "Able to handle_report for a link-connect";
 
-like dies { $filter->_handle_report('0.5|1576146008.006099') },
+like dies { CLASS->new->_handle_report('0.5|1576146008.006099') },
     qr{^\QUnsupported report undef|undef at },
     "Undef report event throws exception";
 
-like dies { $filter->_handle_report('0.5|1576146008.006099|xxx|yyy') },
+like dies { CLASS->new->_handle_report('0.5|1576146008.006099|xxx|yyy') },
     qr{^\QUnsupported report 'xxx'|'yyy' at },
     "Unsupported report type throws exception";
 
 like
-    dies { $filter->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
+    dies { CLASS->new->_handle_report('0.5|1576146008.006099|smtp-in|unknown') },
     qr{^\QUnsupported report 'smtp-in'|'unknown' at },
     "Unsupported report event throws exception";
 

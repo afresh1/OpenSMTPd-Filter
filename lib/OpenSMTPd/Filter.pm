@@ -427,6 +427,8 @@ __END__
 This module is a helper to make writing L<OpenSMTPd|https://opensmtpd.org>
 filters in perl easier.
 
+It should support smtpd API protocol version 0.7 and earlier.
+
 =head1 METHODS
 
 =head2 new

@@ -217,7 +217,8 @@ sub _handle_report {
     my $suffix = delete $report{suffix};
 
     my %params;
-    my @fields = $self->_report_fields_for( @report{qw< subsystem event >} );
+    my @fields = $self->_report_fields_for( @report{qw< subsystem event >},
+        \%report );
     @params{@fields} = split /\|/, $suffix, @fields
         if @fields;
 
@@ -274,7 +275,8 @@ sub _handle_filter {
     $_ = defined $_ ? "'$_'" : "undef" for $subsystem, $phase, $session_id;
 
     my %params;
-    my @fields = $self->_filter_fields_for( @filter{qw< subsystem phase >} );
+    my @fields = $self->_filter_fields_for( @filter{qw< subsystem phase >},
+        \%filter );
     @params{@fields} = split /\|/, $suffix, @fields
         if defined $suffix and @fields;
 
@@ -370,10 +372,15 @@ sub _report_fields_for { shift->_fields_for( report => \%report_events, @_ ) }
 sub _filter_fields_for { shift->_fields_for( filter => \%filter_events, @_ ) }
 
 sub _fields_for {
-    my ( $self, $type, $map, $subsystem, $item ) = @_;
+    my ( $self, $type, $map, $subsystem, $item, $params ) = @_;
 
     if ( $subsystem and $item and my $items = $map->{$subsystem} ) {
-        return @{ $items->{$item} } if $items->{$item};
+        if ( my $fields = $items->{$item} ) {
+            return @{ $self->$fields( $type, $params ) }
+                if ref $fields eq 'CODE';
+
+            return @{$fields};
+        }
     }
 
     $_ = defined $_ ? "'$_'" : "undef" for $subsystem, $item;

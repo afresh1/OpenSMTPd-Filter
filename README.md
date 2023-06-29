@@ -4,7 +4,7 @@ OpenSMTPd::Filter - Easier filters for OpenSMTPd in perl
 
 # VERSION
 
-version v0.0.2
+version v0.0.3
 
 # SYNOPSIS
 
@@ -26,6 +26,8 @@ version v0.0.2
 
 This module is a helper to make writing [OpenSMTPd](https://opensmtpd.org)
 filters in perl easier.
+
+It should support smtpd API protocol version 0.7 and earlier.
 
 # METHODS
 
@@ -251,8 +253,8 @@ Events for the subsystem below may include additional fields.
         - tls-string
     - link-disconnect
     - link-auth
-        - username
         - result
+        - username
     - protocol-client
         - command
     - protocol-server

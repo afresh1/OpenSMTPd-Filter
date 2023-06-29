@@ -222,8 +222,7 @@ sub _handle_report {
     my $suffix = delete $report{suffix};
 
     my %params;
-    my @fields = $self->_report_fields_for( @report{qw< subsystem event >},
-        \%report );
+    my @fields = $self->_fields_for( report => \%report );
     @params{@fields} = split /\|/, $suffix, @fields
         if @fields;
 
@@ -280,8 +279,7 @@ sub _handle_filter {
     $_ = defined $_ ? "'$_'" : "undef" for $subsystem, $phase, $session_id;
 
     my %params;
-    my @fields = $self->_filter_fields_for( @filter{qw< subsystem phase >},
-        \%filter );
+    my @fields = $self->_fields_for( filter => \%filter );
     @params{@fields} = split /\|/, $suffix, @fields
         if defined $suffix and @fields;
 
@@ -373,11 +371,14 @@ sub _handle_filter_data_line {
     return $filter;
 }
 
-sub _report_fields_for { shift->_fields_for( report => \%report_events, @_ ) }
-sub _filter_fields_for { shift->_fields_for( filter => \%filter_events, @_ ) }
-
 sub _fields_for {
-    my ( $self, $type, $map, $subsystem, $item, $params ) = @_;
+    my ( $self, $type, $params ) = @_;
+
+    my $subsystem = $params->{subsystem};
+    my ($item, $map) =
+        $type eq 'report' ? ( $params->{event} => \%report_events )
+      : $type eq 'filter' ? ( $params->{phase} => \%filter_events )
+      :                     croak "Unknown field type: $type";
 
     if ( $subsystem and $item and my $items = $map->{$subsystem} ) {
         if ( my $fields = $items->{$item} ) {

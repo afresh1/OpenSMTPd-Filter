@@ -381,7 +381,7 @@ sub _fields_for {
 
     if ( $subsystem and $item and my $items = $map->{$subsystem} ) {
         if ( my $fields = $items->{$item} ) {
-            return @{ $self->$fields( $type, $params ) }
+            $fields = $self->$fields( $type, $params )
                 if ref $fields eq 'CODE';
 
             return @{$fields};

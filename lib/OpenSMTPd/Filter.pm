@@ -50,7 +50,7 @@ my @filter_fields
     = qw< version timestamp subsystem phase session opaque-token suffix >;
 my %filter_events = (
     'smtp-in' => {
-        'connect'   => [qw< rdns fcrdns src dest >],
+        'connect'   => [qw< rdns src >],
         'helo'      => [qw< identity >],
         'ehlo'      => [qw< identity >],
         'starttls'  => [qw< tls-string >],
@@ -889,11 +889,7 @@ fields.
 
 =item rdns
 
-=item fcrdns
-
 =item src
-
-=item dest
 
 =back
 
